@@ -12,32 +12,34 @@ namespace Vacuum_Modifications;
 public class VacuumModifications : MelonMod
 {
     private static PlayerState? _player;
-    private static MelonPreferences_Category? _vacModifications = MelonPreferences.CreateCategory("Vac Modifications");
-
-    private static MelonPreferences_Entry<double>? _vacShootCooldown =
-        _vacModifications.CreateEntry("Vacuum Shoot Cooldown (0.24)", 0.24);
-
-    private static MelonPreferences_Entry<int>? _playerCustomLimit =
-        _vacModifications.CreateEntry("Player Vacuum Custom Item Limit (100)", 100);
-
-    private static MelonPreferences_Entry<int>? _plortCollectorCustomLimit =
-        _vacModifications.CreateEntry("Plort Collector Custom Item Limit (100)", 100);
-
-    private static MelonPreferences_Entry<int>? _feederCustomLimit =
-        _vacModifications.CreateEntry("Feeder Custom Item Limit (100)", 100);
-
-    private static MelonPreferences_Entry<int>? _siloCustomLimit =
-        _vacModifications.CreateEntry("Silo Custom Item Limit (100)", 100);
-
+    private static MelonPreferences_Category? _vacModifications;
+    private static MelonPreferences_Entry<double>? _vacShootCooldown;
+    private static MelonPreferences_Entry<int>? _playerCustomLimit;
+    private static MelonPreferences_Entry<int>? _plortCollectorCustomLimit;
+    private static MelonPreferences_Entry<int>? _feederCustomLimit;
+    private static MelonPreferences_Entry<int>? _siloCustomLimit;
     private static readonly bool IsMoreVaccablesInstalled = FindMelon("MoreVaccablesMod", "KomiksPL") != null;
     private static IdentifiableTypeGroup? _largoGroup;
+    private static MelonPreferences_Entry<bool>? _halfForMoreVaccablesModLargos;
 
-    private static MelonPreferences_Entry<bool>? _halfForMoreVaccablesModLargos = IsMoreVaccablesInstalled
-        ? _vacModifications.CreateEntry("Half space for More Vaccables Mod Largos (true)", true)
-        : null;
-
-    public override void OnInitializeMelon() =>
+    public override void OnInitializeMelon()
+    {
         MelonLogger.Msg("MoreVaccablesMod is " + (IsMoreVaccablesInstalled ? "Installed" : "Not Installed") + "!");
+        _vacModifications = MelonPreferences.CreateCategory("Vac Modifications");
+        _vacShootCooldown =
+            _vacModifications.CreateEntry("Vacuum Shoot Cooldown", 0.24, "Vacuum Shoot Cooldown (0.24)");
+        _playerCustomLimit = _vacModifications.CreateEntry("Player Vacuum Custom Item Limit", 100,
+            "Player Vacuum Custom Item Limit (100)");
+        _plortCollectorCustomLimit = _vacModifications.CreateEntry("Plort Collector Custom Item Limit", 100,
+            "Plort Collector Custom Item Limit (100)");
+        _feederCustomLimit =
+            _vacModifications.CreateEntry("Feeder Custom Item Limit", 100, "Feeder Custom Item Limit (100)");
+        _siloCustomLimit = _vacModifications.CreateEntry("Silo Custom Item Limit", 100, "Silo Custom Item Limit (100)");
+        _halfForMoreVaccablesModLargos = IsMoreVaccablesInstalled
+            ? _vacModifications.CreateEntry("Half space for More Vaccables Mod Largos", true,
+                "Half space for More Vaccables Mod Largos (true)")
+            : null;
+    }
 
     private static T Get<T>(string name) where T : Object =>
         Resources.FindObjectsOfTypeAll<T>().FirstOrDefault((Func<T, bool>)(x => x.name == name))!;
@@ -72,7 +74,11 @@ public class VacuumModifications : MelonMod
             ? AmmoAmount(ammoModel, index, true)
             : AmmoAmount(ammoModel, index, false);
 
-    [HarmonyPatch(typeof (VacuumItem), nameof(VacuumItem.Expel), new System.Type[] {typeof(GameObject), typeof(bool), typeof(float), typeof(SlimeAppearance.AppearanceSaveSet)})]
+    [HarmonyPatch(typeof(VacuumItem), nameof(VacuumItem.Expel),
+        new System.Type[]
+        {
+            typeof(GameObject), typeof(bool), typeof(float), typeof(SlimeAppearance.AppearanceSaveSet)
+        })]
     private static class WeaponVacuumExpelPatch
     {
         private static void Postfix() => _player!.VacuumItem.ShootCooldown = (float)_vacShootCooldown!.Value;
