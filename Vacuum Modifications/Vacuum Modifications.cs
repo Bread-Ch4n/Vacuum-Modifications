@@ -34,7 +34,7 @@ public class VacuumModifications : MelonMod
     public override void OnInitializeMelon()
     {
         MelonLogger.Msg("MoreVaccablesMod is " + (IsMoreVaccablesInstalled ? "Installed" : "Not Installed") + "!");
-        PrefrenceManager.Init();
+        PreferenceManager.Init();
     }
 
     public override void OnSceneWasLoaded(int buildIndex, string sceneName)

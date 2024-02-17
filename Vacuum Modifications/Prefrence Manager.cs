@@ -2,7 +2,7 @@ using MelonLoader;
 
 namespace Vacuum_Modifications;
 
-public abstract class PrefrenceManager
+public abstract class PreferenceManager
 {
     public static void Init()
     {
