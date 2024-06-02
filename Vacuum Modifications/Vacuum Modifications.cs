@@ -1,6 +1,7 @@
 ﻿#nullable enable
 using HarmonyLib;
 using Il2Cpp;
+using Il2CppMonomiPark.SlimeRancher.Player.PlayerItems;
 using MelonLoader;
 using UnityEngine;
 
