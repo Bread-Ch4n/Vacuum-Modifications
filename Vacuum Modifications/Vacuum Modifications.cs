@@ -11,7 +11,6 @@ public class VacuumModifications : MelonMod
 {
     private static PlayerState? _player;
 
-    // Modifications values
     public static MelonPreferences_Category? VacModifications;
     public static MelonPreferences_Entry<double>? VacShootCooldown;
     public static MelonPreferences_Entry<int>? PlayerCustomLimit;
@@ -19,7 +18,6 @@ public class VacuumModifications : MelonMod
     public static MelonPreferences_Entry<int>? FeederCustomLimit;
     public static MelonPreferences_Entry<int>? SiloCustomLimit;
 
-    // Toggles for the modifications
     public static MelonPreferences_Category? VacModificationsToggles;
     public static MelonPreferences_Entry<bool>? VacShootCooldownToggle;
     public static MelonPreferences_Entry<bool>? PlayerCustomToggle;
@@ -27,8 +25,7 @@ public class VacuumModifications : MelonMod
     public static MelonPreferences_Entry<bool>? FeederCustomToggle;
     public static MelonPreferences_Entry<bool>? SiloCustomToggle;
 
-    // More Vaccables
-    public static readonly bool IsMoreVaccablesInstalled = FindMelon("MoreVaccablesMod", "KomiksPL") != null;
+    public static readonly bool IsMoreVaccablesInstalled = FindMelon("MoreVaccablesMod", "Atmudia") != null;
     public static IdentifiableTypeGroup? LargoGroup;
     public static MelonPreferences_Entry<bool>? HalfForMoreVaccablesModLargos;
 
@@ -44,11 +41,7 @@ public class VacuumModifications : MelonMod
         LargoGroup = Utils.Get<IdentifiableTypeGroup>("LargoGroup");
     }
 
-    [HarmonyPatch(typeof(VacuumItem), nameof(VacuumItem.Expel),
-        new System.Type[]
-        {
-            typeof(GameObject), typeof(bool), typeof(float), typeof(SlimeAppearance.AppearanceSaveSet)
-        })]
+    [HarmonyPatch(typeof(VacuumItem), nameof(VacuumItem.Expel), typeof(GameObject), typeof(bool), typeof(float), typeof(SlimeAppearance.AppearanceSaveSet))]
     private static class WeaponVacuumExpelPatch
     {
         private static void Postfix()
