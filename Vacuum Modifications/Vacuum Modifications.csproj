@@ -34,8 +34,17 @@
         <Reference Include="MelonLoader">
             <HintPath>..\..\..\..\..\SteamLibrary\steamapps\common\Slime Rancher 2\MelonLoader\net6\MelonLoader.dll</HintPath>
         </Reference>
+        <Reference Include="UnityEngine">
+          <HintPath>..\..\..\..\..\SteamLibrary\steamapps\common\Slime Rancher 2\MelonLoader\Il2CppAssemblies\UnityEngine.dll</HintPath>
+        </Reference>
         <Reference Include="UnityEngine.CoreModule">
-            <HintPath>..\..\..\..\..\SteamLibrary\steamapps\common\Slime Rancher 2\MelonLoader\Il2CppAssemblies\UnityEngine.CoreModule.dll</HintPath>
+          <HintPath>..\..\..\..\..\SteamLibrary\steamapps\common\Slime Rancher 2\MelonLoader\Il2CppAssemblies\UnityEngine.CoreModule.dll</HintPath>
+        </Reference>
+        <Reference Include="UnityEngine.InputLegacyModule">
+          <HintPath>..\..\..\..\..\SteamLibrary\steamapps\common\Slime Rancher 2\MelonLoader\Il2CppAssemblies\UnityEngine.InputLegacyModule.dll</HintPath>
+        </Reference>
+        <Reference Include="UnityEngine.PhysicsModule">
+          <HintPath>..\..\..\..\..\SteamLibrary\steamapps\common\Slime Rancher 2\MelonLoader\Il2CppAssemblies\UnityEngine.PhysicsModule.dll</HintPath>
         </Reference>
     </ItemGroup>
 
