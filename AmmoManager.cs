@@ -8,48 +8,33 @@ public class AmmoManager
     {
         if (ammoSlot == null || id == null) return -1;
 
+        #region MoreVaccables Compatibility
+
         var isLargo = Mod.LargoGroup?.IsMember(id) == true
                       || id.referenceId == "SlimeDefinition.Tarr";
-
         var half = isLargo && Mod.HalfForMoreVaccablesModLargos?.Value == true;
 
-        var maxCount = ammoSlot.MaxAmount;
+        #endregion
 
-        maxCount = GetCustomLimit(ammoSlot, maxCount);
-
+        var maxCount = GetCustomLimit(ammoSlot, ammoSlot.MaxAmount);
         return half ? maxCount / 2 : maxCount;
     }
 
     private static int GetCustomLimit(AmmoSlotDefinition ammoSlot, int fallback)
     {
-        var overrides = new Dictionary<string, (Func<bool?> toggle, Func<int?> limit)>
+        var rules = new (string Key, Func<bool?> Toggle, Func<int?> Limit, Func<int>? Default)[]
         {
-            ["AmmoSlot"] = (
-                () => Mod.PlayerCustomToggle?.Value,
-                () => Mod.PlayerCustomToggle?.Value == true
-                    ? Mod.PlayerCustomLimit?.Value
-                    : CalculatePlayerUpgradeLimit()
-            ),
-            ["Collector"] = (() => Mod.CollectorCustomToggle?.Value,
-                () => Mod.CollectorCustomLimit?.Value),
-            ["Feeder"] = (() => Mod.FeederCustomToggle?.Value, () => Mod.FeederCustomLimit?.Value),
-            ["Silo"] = (() => Mod.SiloCustomToggle?.Value, () => Mod.SiloCustomLimit?.Value)
+            ("Collector", () => Mod.CollectorCustomToggle?.Value, () => Mod.CollectorCustomLimit?.Value, null),
+            ("Feeder", () => Mod.FeederCustomToggle?.Value, () => Mod.FeederCustomLimit?.Value, null),
+            ("Silo", () => Mod.SiloCustomToggle?.Value, () => Mod.SiloCustomLimit?.Value, null)
         };
 
-        foreach (var kvp in overrides)
-            if (ammoSlot.name.Contains(kvp.Key) && kvp.Value.toggle() == true)
-                return kvp.Value.limit() ?? fallback;
+        foreach (var (key, toggle, limit, def) in rules)
+            if (ammoSlot.name.Contains(key, StringComparison.OrdinalIgnoreCase))
+                return toggle() == true
+                    ? limit() ?? (def?.Invoke() ?? fallback)
+                    : def?.Invoke() ?? fallback;
 
         return fallback;
-    }
-
-    private static int CalculatePlayerUpgradeLimit()
-    {
-        var upgrade = Mod.Player?._model?.upgradeModel?.upgradeDefinitions.items?
-            .Find(new Func<UpgradeDefinition, bool>(u => u.name == "AmmoCapacity"));
-
-        if (upgrade == null) return Mod.PlayerCustomLimit != null ? Mod.PlayerCustomLimit.Value : 30;
-
-        return 10 * (upgrade.LevelCount + 3);
     }
 }

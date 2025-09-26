@@ -46,9 +46,6 @@
         <Reference Include="Il2Cppmscorlib">
             <HintPath>$(LibFolder)Il2Cppmscorlib.dll</HintPath>
         </Reference>
-        <Reference Include="UnityEngine">
-            <HintPath>$(LibFolder)UnityEngine.dll</HintPath>
-        </Reference>
         <Reference Include="UnityEngine.CoreModule">
             <HintPath>$(LibFolder)UnityEngine.CoreModule.dll</HintPath>
         </Reference>

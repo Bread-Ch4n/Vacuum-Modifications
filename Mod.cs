@@ -7,7 +7,7 @@ using MelonLoader;
 using VacuumModifications;
 
 [assembly:
-    MelonInfo(typeof(Mod), "Vacuum Modifications", "2.0.0", "Bread-Chan",
+    MelonInfo(typeof(Mod), "Vacuum Modifications", "2.0.1", "Bread-Chan",
         "https://www.nexusmods.com/slimerancher2/mods/45")]
 [assembly: MelonGame("MonomiPark", "SlimeRancher2")]
 
@@ -15,38 +15,28 @@ namespace VacuumModifications;
 
 public class Mod : MelonMod
 {
-    [HarmonyPatch("Il2CppInterop.HarmonySupport.Il2CppDetourMethodPatcher", "ReportException")]
-    [HarmonyPrefix]
-    public static bool PatchIl2CppDetourMethodPatcher(Exception ex)
-    {
-        MelonLogger.Error("During invoking native->managed trampoline", ex);
-        return false;
-    }
-
     #region Patches
 
-    private class Patches
+    [HarmonyPatch(typeof(VacuumItem), nameof(VacuumItem.Start))]
+    [HarmonyPrefix]
+    private static void VacuumItem_Start(VacuumItem __instance)
     {
-        [HarmonyPatch(typeof(VacuumItem), nameof(VacuumItem.Start))]
-        [HarmonyPrefix]
-        private static void VacuumItem_Start(VacuumItem __instance)
-        {
+        if (PlayerCustomToggle!.Value)
             foreach (var ammoSlot in Player!.Ammo.Slots)
                 ammoSlot._maxCountValue = new NullableFloatProperty(PlayerCustomLimit!.Value);
 
-            if (VacShootCooldownToggle!.Value) __instance.ShootCooldown = (float)VacShootCooldown!.Value;
-        }
+        if (VacShootCooldownToggle!.Value) __instance.ShootCooldown = (float)VacShootCooldown!.Value;
+    }
 
-        [HarmonyPatch(typeof(AmmoSlot), nameof(AmmoSlot.Setup))]
-        [HarmonyPrefix]
-        public static void AmmoSlot_Setup(AmmoSlot __instance)
-        {
-            var ammoSlot = __instance.Definition;
-            if (ammoSlot == null) return;
-            var res = AmmoManager.CalculateMaxAmmoAmount(ammoSlot, __instance.Id);
-            if (res == -1) return;
-            ammoSlot._maxAmount = res;
-        }
+    [HarmonyPatch(typeof(AmmoSlot), nameof(AmmoSlot.Setup))]
+    [HarmonyPrefix]
+    public static void AmmoSlot_Setup(AmmoSlot __instance)
+    {
+        var ammoSlot = __instance.Definition;
+        if (ammoSlot == null) return;
+        var res = AmmoManager.CalculateMaxAmmoAmount(ammoSlot, __instance.Id);
+        if (res == -1) return;
+        ammoSlot._maxAmount = res;
     }
 
     #endregion
@@ -89,7 +79,7 @@ public class Mod : MelonMod
     {
         Preferences.Init();
         var h = new HarmonyLib.Harmony("com.bread-chan.vacuum_modifications");
-        h.PatchAll(typeof(Patches));
+        h.PatchAll(typeof(Mod));
         MelonLogger.Msg("Initialized.");
     }
 
@@ -97,6 +87,14 @@ public class Mod : MelonMod
     {
         if (sceneName == "PlayerCore") Player = SRSingleton<SceneContext>.Instance.PlayerState;
         LargoGroup = Utils.Get<IdentifiableTypeGroup>("LargoGroup");
+    }
+
+    [HarmonyPatch("Il2CppInterop.HarmonySupport.Il2CppDetourMethodPatcher", "ReportException")]
+    [HarmonyPrefix]
+    public static bool PatchIl2CppDetourMethodPatcher(Exception ex)
+    {
+        MelonLogger.Error("During invoking native->managed trampoline", ex);
+        return false;
     }
 
     #endregion

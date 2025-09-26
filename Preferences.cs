@@ -18,7 +18,7 @@ public class Preferences
         Mod.VacModifications.SetFilePath(Path.Combine(PreferencePath, "Values.cfg"));
 
         Mod.VacShootCooldown =
-            Mod.VacModifications!.CreateEntry("Vacuum_Shoot_Cooldown", 0.24,
+            Mod.VacModifications.CreateEntry("Vacuum_Shoot_Cooldown", 0.24,
                 "Vacuum Shoot Cooldown (0.24)");
         Mod.PlayerCustomLimit =
             Mod.VacModifications.CreateEntry("Player_Vacuum_Custom_MaxAmount", 100,
@@ -45,19 +45,19 @@ public class Preferences
         Mod.VacModificationsToggles.SetFilePath(Path.Combine(PreferencePath, "Toggles.cfg"));
 
         Mod.VacShootCooldownToggle =
-            Mod.VacModificationsToggles!.CreateEntry("Toggle Vacuum Shoot Cooldown", true,
+            Mod.VacModificationsToggles.CreateEntry("Vacuum_Shoot_Cooldown", true,
                 "Vacuum Shoot Cooldown (true)");
         Mod.PlayerCustomToggle =
-            Mod.VacModificationsToggles.CreateEntry("Player Vacuum Custom Item Limit", true,
+            Mod.VacModificationsToggles.CreateEntry("Player_Vacuum_Custom_Item_Limit", true,
                 "Toggle Player Vacuum Custom Item Limit (true)");
         Mod.CollectorCustomToggle =
-            Mod.VacModificationsToggles.CreateEntry("Plort Collector Custom Item Limit", true,
+            Mod.VacModificationsToggles.CreateEntry("Plort_Collector_Custom_Item_Limit", true,
                 "Toggle Plort Collector Custom Item Limit (true)");
         Mod.FeederCustomToggle =
-            Mod.VacModificationsToggles.CreateEntry("Toggle Feeder Custom Item Limit", true,
+            Mod.VacModificationsToggles.CreateEntry("Feeder_Custom_Item_Limit", true,
                 "Toggle Feeder Custom Item Limit (true)");
         Mod.SiloCustomToggle =
-            Mod.VacModificationsToggles.CreateEntry("Toggle Silo Custom Item Limit", true,
+            Mod.VacModificationsToggles.CreateEntry("Silo_Custom_Item_Limit", true,
                 "Toggle Silo Custom Item Limit (true)");
 
         #endregion
