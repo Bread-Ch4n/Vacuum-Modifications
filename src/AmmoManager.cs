@@ -18,51 +18,39 @@ public class AmmoManager
 
         #endregion
 
-        var maxCount = GetCustomLimit(ammoSlot, ammoSlot.MaxAmount);
+        var maxCount = GetCustomLimit(ammoSlot);
+        if (maxCount == -1)
+            return -1;
         return half ? maxCount / 2 : maxCount;
     }
 
-    private static int GetCustomLimit(AmmoSlotDefinition ammoSlot, int fallback)
+    private static int GetCustomLimit(AmmoSlotDefinition ammoSlot)
     {
-        var rules = new (string Key, Func<bool?> Toggle, Func<int?> Limit, Func<int>? Default)[]
+        var rules = new (string Key, Func<bool?> Toggle, Func<int?> Limit)[]
         {
-            (
-                "AmmoSlot",
-                () => Mod.PlayerCustomToggle?.Value,
-                () => Mod.PlayerCustomLimit?.Value,
-                null
-            ),
+            ("AmmoSlot", () => Mod.PlayerCustomToggle?.Value, () => Mod.PlayerCustomLimit?.Value),
             (
                 "ElderCollector",
                 () => Mod.ElderCollectorCustomToggle?.Value,
-                () => Mod.ElderCollectorCustomLimit?.Value,
-                null
+                () => Mod.ElderCollectorCustomLimit?.Value
             ),
             (
                 "PlortCollector",
                 () => Mod.PlortCollectorCustomToggle?.Value,
-                () => Mod.PlortCollectorCustomLimit?.Value,
-                null
+                () => Mod.PlortCollectorCustomLimit?.Value
             ),
-            (
-                "Feeder",
-                () => Mod.FeederCustomToggle?.Value,
-                () => Mod.FeederCustomLimit?.Value,
-                null
-            ),
-            ("Silo", () => Mod.SiloCustomToggle?.Value, () => Mod.SiloCustomLimit?.Value, null),
+            ("Feeder", () => Mod.FeederCustomToggle?.Value, () => Mod.FeederCustomLimit?.Value),
+            ("Silo", () => Mod.SiloCustomToggle?.Value, () => Mod.SiloCustomLimit?.Value),
         };
 
-        foreach (var (key, toggle, limit, def) in rules)
+        foreach (var (key, toggle, limit) in rules)
             if (
                 ammoSlot.name.Contains(key, StringComparison.OrdinalIgnoreCase)
                 || ammoSlot.name == key
             )
-                return toggle() == true
-                    ? limit() ?? (def?.Invoke() ?? fallback)
-                    : def?.Invoke() ?? fallback;
+                return toggle() == true ? limit() ?? -1 : -1;
 
         MelonLogger.Msg($"Unknown Ammo Slot {ammoSlot.name}");
-        return fallback;
+        return -1;
     }
 }
