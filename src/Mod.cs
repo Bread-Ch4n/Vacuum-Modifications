@@ -2,6 +2,7 @@
 using Il2Cpp;
 using Il2CppMonomiPark.SlimeRancher.Player;
 using Il2CppMonomiPark.SlimeRancher.Player.PlayerItems;
+using Il2CppMonomiPark.SlimeRancher.World;
 using MelonLoader;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -10,7 +11,7 @@ using VacuumModifications;
 [assembly: MelonInfo(
     typeof(Mod),
     "Vacuum Modifications",
-    "2.1.2",
+    "2.1.3",
     "Bread-Chan",
     "https://www.nexusmods.com/slimerancher2/mods/45"
 )]
@@ -70,59 +71,111 @@ public class Mod : MelonMod
         [HarmonyPrefix]
         private static bool WeaponVacuumExpelPatch(VacuumItem __instance)
         {
-            if (!Keyboard.current.leftCtrlKey.isPressed)
+            if (!Keyboard.current[InstaVacpackHotkey?.Value ?? Key.LeftCtrl].isPressed)
                 return true;
             if (Player == null || !Player.Ammo.HasSelectedAmmo() || Player.VacuumItem == null)
-                return true;
+                return false;
             var sourceSlot = Player.Ammo.Slots[Player.Ammo._selectedAmmoIdx];
             if (sourceSlot == null || sourceSlot.Id == null)
-                return true;
+                return false;
 
             var pointedAt = Utils.tryGetPointedObject(Player.VacuumItem);
             if (!pointedAt || pointedAt?.name != "triggerDeposit")
-                return true;
+                return false;
 
             var container = Utils.tryGetContainer(pointedAt, sourceSlot.Id);
 
             switch (container)
             {
                 case Containers.MarketplaceContainer marketplaceContainer:
+                {
                     if (marketplaceContainer.Add(sourceSlot.Count))
                         __instance.ShootEffect(.5f);
-                    return false;
+                    break;
+                }
+
                 case Containers.SiloContainer siloContainer:
+                {
                     if (siloContainer.Add(sourceSlot.Count))
                         __instance.ShootEffect(.5f);
-                    return false;
+                    break;
+                }
+
+                case Containers.WarpDepotContainer siloContainer:
+                {
+                    if (siloContainer.Add(sourceSlot.Count))
+                        __instance.ShootEffect(.5f);
+                    break;
+                }
+
                 case Containers.RefineryContainer refineryContainer:
+                {
                     if (refineryContainer.Add(sourceSlot.Count))
                         __instance.ShootEffect(.5f);
-                    return false;
+                    break;
+                }
+
                 case Containers.FeederContainer feederContainer:
+                {
                     if (feederContainer.Add(sourceSlot.Count))
                         __instance.ShootEffect(.5f);
-                    return false;
-                default:
-                    return true;
+                    break;
+                }
             }
+
+            return false;
         }
 
         #endregion
 
         #region Consume
 
-        [HarmonyPatch(typeof(VacuumItem), nameof(VacuumItem.Consume))]
+        [HarmonyPatch(
+            typeof(VacuumItem),
+            nameof(VacuumItem.ConsumeLiquid),
+            typeof(LiquidSourceSurface)
+        )]
         [HarmonyPrefix]
-        private static bool InstaGrab(VacuumItem __instance, HashSet<GameObject> inVac)
+        private static bool VacuumItem_ConsumeLiquid_1(LiquidSourceSurface source)
         {
-            if (!Keyboard.current.leftCtrlKey.isPressed)
+            if (!Keyboard.current[InstaVacpackHotkey?.Value ?? Key.LeftCtrl].isPressed)
                 return true;
             if (Player == null || Player.VacuumItem == null)
                 return true;
 
+            var sameLiquidAndUnlockedSlot = Player.Ammo.Slots.FirstOrDefault(ammoSlot =>
+                ammoSlot.Definition.name.Contains("Liquid")
+                && ammoSlot.IsUnlocked
+                && ammoSlot.Id == source.LiquidIdentifiableType
+            );
+
+            var emptyLiquidAndUnlockedSlot = Player.Ammo.Slots.FirstOrDefault(ammoSlot =>
+                ammoSlot.Definition.name.Contains("Liquid")
+                && ammoSlot.IsUnlocked
+                && ammoSlot.Id == null
+            );
+
+            var slot = sameLiquidAndUnlockedSlot ?? emptyLiquidAndUnlockedSlot;
+            if (slot == null)
+                return true;
+            slot.Id = source.LiquidIdentifiableType;
+            slot.Count = slot.MaxCount;
+            return true;
+        }
+
+        [HarmonyPatch(typeof(VacuumItem), nameof(VacuumItem.Consume))]
+        [HarmonyPrefix]
+        private static bool InstaGrab(VacuumItem __instance, HashSet<GameObject> inVac)
+        {
+            if (!Keyboard.current[InstaVacpackHotkey?.Value ?? Key.LeftCtrl].isPressed)
+                return true;
+            __instance._vacMode = VacuumItem.VacMode.NONE;
+            if (Player == null || Player.VacuumItem == null)
+                return false;
+
             var pointedAt = Utils.tryGetPointedObject(Player.VacuumItem);
             if (!pointedAt || pointedAt?.name != "triggerDeposit")
-                return true;
+                return false;
 
             var container = Utils.tryGetContainer(pointedAt);
 
@@ -132,44 +185,68 @@ public class Mod : MelonMod
                 {
                     var targetSlot = Utils.FindTargetSlot(siloContainer.Id);
                     if (targetSlot == null)
-                        return true;
+                        return false;
                     var transferSucceeded = Utils.tryTransferMaxAmount(
                         siloContainer.AmmoSlot,
                         targetSlot
                     );
                     if (transferSucceeded)
                         __instance.CaptureEffect();
-                    return !transferSucceeded;
+                    else
+                        __instance.CaptureFailedEffect();
+                    break;
                 }
+
+                case Containers.WarpDepotContainer warpDepotContainer:
+                {
+                    var targetSlot = Utils.FindTargetSlot(warpDepotContainer.Id);
+                    if (targetSlot == null)
+                        return false;
+                    var transferSucceeded = Utils.tryTransferMaxAmount(
+                        warpDepotContainer.AmmoSlot,
+                        targetSlot
+                    );
+                    if (transferSucceeded)
+                        __instance.CaptureEffect();
+                    else
+                        __instance.CaptureFailedEffect();
+                    break;
+                }
+
                 case Containers.FeederContainer feederContainer:
                 {
                     var targetSlot = Utils.FindTargetSlot(feederContainer.Id);
                     if (targetSlot == null)
-                        return true;
+                        return false;
                     var transferSucceeded = Utils.tryTransferMaxAmount(
                         feederContainer.AmmoSlot,
                         targetSlot
                     );
                     if (transferSucceeded)
                         __instance.CaptureEffect();
-                    return !transferSucceeded;
+                    else
+                        __instance.CaptureFailedEffect();
+                    break;
                 }
+
                 case Containers.PlortCollector plortCollector:
                 {
                     var targetSlot = Utils.FindTargetSlot(plortCollector.Id);
                     if (targetSlot == null)
-                        return true;
+                        return false;
                     var transferSucceeded = Utils.tryTransferMaxAmount(
                         plortCollector.AmmoSlot,
                         targetSlot
                     );
                     if (transferSucceeded)
                         __instance.CaptureEffect();
-                    return !transferSucceeded;
+                    else
+                        __instance.CaptureFailedEffect();
+                    break;
                 }
-                default:
-                    return true;
             }
+
+            return false;
         }
 
         #endregion
@@ -183,7 +260,7 @@ public class Mod : MelonMod
 
     #region MoreVaccables Compatibility Variables
 
-    public static readonly bool IsMoreVaccablesInstalled =
+    public readonly static bool IsMoreVaccablesInstalled =
         FindMelon("MoreVaccablesMod", "Atmudia") != null;
 
     public static IdentifiableTypeGroup? LargoGroup;
@@ -196,6 +273,7 @@ public class Mod : MelonMod
 
     public static MelonPreferences_Category? PlayerPreferences;
     public static MelonPreferences_Entry<bool>? InstaVacpackToggle;
+    public static MelonPreferences_Entry<Key>? InstaVacpackHotkey;
     public static MelonPreferences_Entry<bool>? VacShootCooldownToggle;
     public static MelonPreferences_Entry<bool>? PlayerCustomToggle;
     public static MelonPreferences_Entry<double>? VacShootCooldown;

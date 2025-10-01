@@ -66,10 +66,49 @@ public class Containers
 
         public AmmoSlot AmmoSlot => _silo.Ammo.Slots[_siloCatcher.SlotIdx];
 
+        public IdentifiableType Id => AmmoSlot.Id;
+        public int Count => AmmoSlot.Count;
+        public int MaxCount => AmmoSlot.MaxCount;
+        public bool CanRemove => Count > 0;
+        public bool CanAdd => _silo.CanAccept(_id);
+
+        public bool Add(int count)
+        {
+            if (!CanAdd)
+                return false;
+
+            var player = Mod.Player;
+            return player != null && Utils.tryTransferMaxAmount(player.Ammo.SelectedSlot, AmmoSlot);
+        }
+
+        public bool Remove(int count)
+        {
+            if (!CanRemove)
+                return false;
+            AmmoSlot.Count = Math.Min(0, AmmoSlot.Count - count);
+            return true;
+        }
+    }
+
+    public class WarpDepotContainer : IItemContainer
+    {
+        private readonly IdentifiableType _id;
+        private readonly LinkedSiloStorage _silo;
+        private readonly SiloCatcher _siloCatcher;
+
+        public WarpDepotContainer(IdentifiableType id, SiloCatcher siloCatcher)
+        {
+            _id = id;
+            _siloCatcher = siloCatcher;
+            _silo = siloCatcher._storageSilo.Cast<LinkedSiloStorage>() ?? throw new InvalidOperationException();
+        }
+
+        public AmmoSlot AmmoSlot => _silo._linkedAmmo.Slots[_silo._linkedAmmo._selectedAmmoIdx];
+
         public IdentifiableType Id => _silo.GetSlotIdentifiable(_siloCatcher.SlotIdx);
-        public int Count => _silo.GetSlotCount(_siloCatcher.SlotIdx);
-        public int MaxCount => _silo.GetSlotMaxCount(_siloCatcher.SlotIdx);
-        public bool CanRemove => AmmoSlot.Count > 0;
+        public int Count => AmmoSlot.Count;
+        public int MaxCount => AmmoSlot.MaxCount;
+        public bool CanRemove => Count > 0;
         public bool CanAdd => _silo.CanAccept(_id);
 
         public bool Add(int count)
@@ -108,7 +147,7 @@ public class Containers
         public IdentifiableType Id => _silo.GetSlotIdentifiable(0);
         public int Count => _silo.GetSlotCount(0);
         public int MaxCount => _silo.GetSlotMaxCount(0);
-        public bool CanRemove => AmmoSlot.Count > 0;
+        public bool CanRemove => Count > 0;
         public bool CanAdd => _silo.CanAccept(_id);
 
         public bool Add(int count)
@@ -148,9 +187,9 @@ public class Containers
 
         public AmmoSlot AmmoSlot => _silo.Ammo.Slots[_siloCatcher.SlotIdx];
 
-        public IdentifiableType Id => _silo.GetSlotIdentifiable(_siloCatcher.SlotIdx);
-        public int Count => _silo.GetSlotCount(_siloCatcher.SlotIdx);
-        public int MaxCount => _silo.GetSlotMaxCount(_siloCatcher.SlotIdx);
+        public IdentifiableType Id => AmmoSlot.Id;
+        public int Count => AmmoSlot.Count;
+        public int MaxCount => AmmoSlot.MaxCount;
         public bool CanRemove => Count > 0;
         public bool CanAdd => false;
 
@@ -193,9 +232,17 @@ public class Containers
             if (player == null)
                 return false;
 
-            player.Ammo.SelectedSlot.Count = 0;
-            player.Ammo.SelectedSlot.Id = null;
-            SRSingleton<SceneContext>.Instance.GadgetDirector.AddItem(_id, count);
+            var spaceLeft = Math.Max(0, MaxCount - Count);
+            var toTransfer = Math.Min(count, spaceLeft);
+
+            if (toTransfer <= 0)
+                return false;
+
+            player.Ammo.SelectedSlot.Count -= toTransfer;
+            SRSingleton<SceneContext>.Instance.GadgetDirector.AddItem(_id, toTransfer);
+
+            if (player.Ammo.SelectedSlot.Count <= 0)
+                player.Ammo.SelectedSlot.Id = null;
 
             return true;
         }

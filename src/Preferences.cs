@@ -1,11 +1,12 @@
 using MelonLoader;
 using MelonLoader.Utils;
+using UnityEngine.InputSystem;
 
 namespace VacuumModifications;
 
 public class Preferences
 {
-    private static readonly string PreferencePath = Path.Combine(
+    private readonly static string PreferencePath = Path.Combine(
         MelonEnvironment.UserDataDirectory
     );
 
@@ -29,6 +30,12 @@ public class Preferences
             "Insta_Vacpack_Toggle",
             false,
             "Insta Vacpack Toggle"
+        );
+
+        Mod.InstaVacpackHotkey = Mod.PlayerPreferences.CreateEntry(
+            "Insta_Vacpack_Hotkey",
+            Key.LeftCtrl,
+            "Hotkey to activate Insta Vacpack"
         );
 
         #endregion
@@ -80,13 +87,13 @@ public class Preferences
         Mod.PlortCollectorCustomToggle = Mod.CollectorsPreferences.CreateEntry(
             "Plort_Collector_Custom_MaxAmount_Toggle",
             false,
-            "Plort Collector Custom MaxAmount Toggle"
+            "Plort Collector Custom Max Amount Toggle"
         );
 
         Mod.PlortCollectorCustomLimit = Mod.CollectorsPreferences.CreateEntry(
             "Plort_Collector_Custom_MaxAmount",
             100,
-            "Plort Collector Custom MaxAmount (100)"
+            "Plort Collector Custom Max Amount (100)"
         );
 
         #endregion
@@ -96,13 +103,13 @@ public class Preferences
         Mod.ElderCollectorCustomToggle = Mod.CollectorsPreferences.CreateEntry(
             "Elder_Collector_Custom_MaxAmount_Toggle",
             false,
-            "Elder Collector Custom MaxAmount Toggle"
+            "Elder Collector Custom Max Amount Toggle"
         );
 
         Mod.ElderCollectorCustomLimit = Mod.CollectorsPreferences.CreateEntry(
             "Elder_Collector_Custom_MaxAmount",
             100,
-            "Elder Collector Custom Max Item Amount (100)"
+            "Elder Collector Custom Max Amount (100)"
         );
 
         #endregion
@@ -120,13 +127,13 @@ public class Preferences
         Mod.FeederCustomToggle = Mod.FeederPreferences.CreateEntry(
             "Feeder_Custom_MaxAmount_Toggle",
             false,
-            "Feeder Custom MaxAmount Toggle"
+            "Feeder Custom Max Amount Toggle"
         );
 
         Mod.FeederCustomLimit = Mod.FeederPreferences.CreateEntry(
             "Feeder_Custom_MaxAmount",
             100,
-            "Feeder Custom MaxAmount (100)"
+            "Feeder Custom Max Amount (100)"
         );
 
         #endregion
@@ -142,13 +149,13 @@ public class Preferences
         Mod.SiloCustomToggle = Mod.SiloPreferences.CreateEntry(
             "Silo_Custom_MaxAmount_Toggle",
             false,
-            "Silo Custom_MaxAmount_Toggle"
+            "Silo Custom Max Amount Toggle"
         );
 
         Mod.SiloCustomLimit = Mod.SiloPreferences.CreateEntry(
             "Silo_Custom_MaxAmount",
             100,
-            "Silo Custom MaxAmount (100)"
+            "Silo Custom Max Amount (100)"
         );
 
         #endregion

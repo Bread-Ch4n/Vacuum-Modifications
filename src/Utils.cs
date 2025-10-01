@@ -13,7 +13,7 @@ public class Utils
         where T : Object =>
         Resources.FindObjectsOfTypeAll<T>().FirstOrDefault((Func<T, bool>)(x => x.name == name))!;
 
-    public static GameObject? tryGetPointedObject(VacuumItem vacpack, float distance = 15f)
+    public static GameObject? tryGetPointedObject(VacuumItem vacpack, float distance = 20f)
     {
         var transform = vacpack.VacOrigin.transform;
         Physics.Raycast(
@@ -24,13 +24,6 @@ public class Utils
             QueryTriggerInteraction.Collide
         );
         return hitInfo.collider?.gameObject;
-    }
-
-    public static T? tryGetPointedObject<T>(VacuumItem vacpack, float distance = 15f)
-        where T : Component
-    {
-        var pointedObject = tryGetPointedObject(vacpack, distance);
-        return pointedObject == null ? null : pointedObject.GetComponent<T>();
     }
 
     public static bool tryTransferMaxAmount(AmmoSlot? source, AmmoSlot? target)
@@ -77,34 +70,47 @@ public class Utils
         IdentifiableType id = null!
     )
     {
+        if (go.TryGetComponent<SiloCatcher>(out var siloCatcher))
+            switch (siloCatcher.Type)
+            {
+                case SiloCatcherType.SILO_DEFAULT:
+                {
+                    if (isSlimeFeeder(siloCatcher))
+                        return new Containers.FeederContainer(id, siloCatcher);
+
+                    if (siloCatcher._storageSilo && siloCatcher._storageSilo.name.Contains("Silo"))
+                        return new Containers.SiloContainer(id, siloCatcher);
+
+                    if (
+                        siloCatcher._storageSilo.Cast<LinkedSiloStorage>() != null
+                        && siloCatcher._storageSilo.name.Contains("WarpDepot")
+                    )
+                        return new Containers.WarpDepotContainer(id, siloCatcher);
+                    break;
+                }
+
+                case SiloCatcherType.SILO_OUTPUT_ONLY:
+                {
+                    if (siloCatcher._storageSilo.name.Contains("PlortCollector"))
+                        return new Containers.PlortCollector(id, siloCatcher);
+                    break;
+                }
+
+                case SiloCatcherType.REFINERY:
+                {
+                    return new Containers.RefineryContainer(id, siloCatcher);
+                }
+
+                case SiloCatcherType.DECORIZER:
+                case SiloCatcherType.SILO_INPUT_ONLY:
+                    break;
+
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+
         if (go.TryGetComponent<ScorePlort>(out var marketplace))
             return new Containers.MarketplaceContainer(id, marketplace);
-
-        if (
-            go.TryGetComponent<SiloCatcher>(out var feeder)
-            && feeder.Type == SiloCatcherType.SILO_DEFAULT
-            && isSlimeFeeder(feeder)
-        )
-            return new Containers.FeederContainer(id, feeder);
-
-        if (
-            go.TryGetComponent<SiloCatcher>(out var silo)
-            && silo.Type == SiloCatcherType.SILO_DEFAULT
-        )
-            return new Containers.SiloContainer(id, silo);
-
-        if (
-            go.TryGetComponent<SiloCatcher>(out var plortCollector)
-            && silo.Type == SiloCatcherType.SILO_OUTPUT_ONLY
-            && silo._storageSilo.name.Contains("PlortCollector")
-        )
-            return new Containers.PlortCollector(id, plortCollector);
-
-        if (
-            go.TryGetComponent<SiloCatcher>(out var refinery)
-            && silo.Type == SiloCatcherType.REFINERY
-        )
-            return new Containers.RefineryContainer(id, refinery);
 
         MelonLogger.Msg($"Unknown Container! {go.name}");
 
