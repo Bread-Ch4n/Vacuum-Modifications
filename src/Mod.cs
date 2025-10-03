@@ -11,7 +11,7 @@ using VacuumModifications;
 [assembly: MelonInfo(
     typeof(Mod),
     "Vacuum Modifications",
-    "2.1.3",
+    "2.1.4",
     "Bread-Chan",
     "https://www.nexusmods.com/slimerancher2/mods/45"
 )]
@@ -37,15 +37,16 @@ public class Mod : MelonMod
     private class CustomItemLimits
     {
         [HarmonyPatch(typeof(AmmoSlot), nameof(AmmoSlot.MaxCount), MethodType.Getter)]
-        [HarmonyPostfix]
+        [HarmonyPrefix]
         [HarmonyPriority(HarmonyLib.Priority.Last)]
-        private static void AmmoSlot_MaxCount(AmmoSlot __instance, ref int __result)
+        private static bool AmmoSlot_MaxCount(AmmoSlot __instance, ref int __result)
         {
             var res = AmmoManager.CalculateMaxAmmoAmount(__instance.Definition, __instance.Id);
             if (res == -1)
-                return;
+                return true;
             __instance.Definition._maxAmount = res;
             __result = res;
+            return false;
         }
 
         // Just in case

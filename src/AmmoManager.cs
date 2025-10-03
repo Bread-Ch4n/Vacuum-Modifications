@@ -5,15 +5,15 @@ namespace VacuumModifications;
 
 public class AmmoManager
 {
-    public static int CalculateMaxAmmoAmount(AmmoSlotDefinition? ammoSlot, IdentifiableType id)
+    public static int CalculateMaxAmmoAmount(AmmoSlotDefinition? ammoSlot, IdentifiableType? id)
     {
-        if (ammoSlot == null || id == null)
+        if (ammoSlot == null)
             return -1;
 
         #region MoreVaccables Compatibility
 
         var isLargo =
-            Mod.LargoGroup?.IsMember(id) == true || id.referenceId == "SlimeDefinition.Tarr";
+            id != null && (Mod.LargoGroup?.IsMember(id) == true || id.referenceId == "SlimeDefinition.Tarr");
         var half = isLargo && Mod.HalfForMoreVaccablesModLargos?.Value == true;
 
         #endregion
@@ -40,7 +40,7 @@ public class AmmoManager
                 () => Mod.PlortCollectorCustomLimit?.Value
             ),
             ("Feeder", () => Mod.FeederCustomToggle?.Value, () => Mod.FeederCustomLimit?.Value),
-            ("Silo", () => Mod.SiloCustomToggle?.Value, () => Mod.SiloCustomLimit?.Value),
+            ("Silo", () => Mod.SiloCustomToggle?.Value, () => Mod.SiloCustomLimit?.Value)
         };
 
         foreach (var (key, toggle, limit) in rules)
