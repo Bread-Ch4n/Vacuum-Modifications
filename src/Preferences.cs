@@ -1,13 +1,12 @@
 using MelonLoader;
 using MelonLoader.Utils;
-using UnityEngine.InputSystem;
 
 namespace VacuumModifications;
 
 public class Preferences
 {
-    private readonly static string PreferencePath = Path.Combine(
-        MelonEnvironment.UserDataDirectory
+    private static readonly string PreferencePath = Path.Combine(
+        MelonEnvironment.UserDataDirectory, "VacuumModifications"
     );
 
     public static void Init()
@@ -26,48 +25,28 @@ public class Preferences
 
         #region Insta Vacpack
 
-        Mod.InstaVacpackToggle = Mod.PlayerPreferences.CreateEntry(
-            "Insta_Vacpack_Toggle",
-            false,
-            "Insta Vacpack Toggle"
-        );
-
-        Mod.InstaVacpackHotkey = Mod.PlayerPreferences.CreateEntry(
-            "Insta_Vacpack_Hotkey",
-            Key.LeftCtrl,
-            "Hotkey to activate Insta Vacpack"
+        Mod.InstaVacpackPreferenceEntry = Mod.PlayerPreferences.CreateEntry(
+            "Insta_Vacpack", new Mod.InstaVacpackEntry(false, ["<Keyboard>/leftCtrl"]),
+            "Insta Vacpack"
         );
 
         #endregion
 
         #region Vacpack Shoot Cooldown
 
-        Mod.VacShootCooldownToggle = Mod.PlayerPreferences.CreateEntry(
-            "Vacuum_Shoot_Cooldown_Toggle",
-            false,
-            "Vacuum Shoot Cooldown Toggle"
-        );
-
         Mod.VacShootCooldown = Mod.PlayerPreferences.CreateEntry(
             "Vacuum_Shoot_Cooldown",
-            0.24,
-            "Vacuum Shoot Cooldown (0.24)"
+            new Mod.VacpackCooldownEntry(false, 0.24),
+            "Vacuum Shoot Cooldown"
         );
 
         #endregion
 
         #region Custom MaxAmount
 
-        Mod.PlayerCustomToggle = Mod.PlayerPreferences.CreateEntry(
-            "Player_Vacuum_Custom_MaxAmount_Toggle",
-            false,
-            "Player Vacuum Custom MaxAmount Toggle"
-        );
-
-        Mod.PlayerCustomLimit = Mod.PlayerPreferences.CreateEntry(
-            "Player_Vacuum_Custom_MaxAmount",
-            100,
-            "Player Vacuum Custom Max Item Amount (100)"
+        Mod.PlayerPreferenceEntry = Mod.PlayerPreferences.CreateEntry(
+            "Player_Item_Limit", new Mod.LimitEntry(false, 100),
+            "Player Item Limit"
         );
 
         #endregion
@@ -82,37 +61,18 @@ public class Preferences
         );
         Mod.CollectorsPreferences.SetFilePath(configFile, true, false);
 
-        #region Plort
 
-        Mod.PlortCollectorCustomToggle = Mod.CollectorsPreferences.CreateEntry(
-            "Plort_Collector_Custom_MaxAmount_Toggle",
-            false,
-            "Plort Collector Custom Max Amount Toggle"
+        Mod.PlortCollector = Mod.CollectorsPreferences.CreateEntry(
+            "Plort_Collector_Limit",
+            new Mod.LimitEntry(false, 100),
+            "Plort Collector Limit"
         );
 
-        Mod.PlortCollectorCustomLimit = Mod.CollectorsPreferences.CreateEntry(
-            "Plort_Collector_Custom_MaxAmount",
-            100,
-            "Plort Collector Custom Max Amount (100)"
+        Mod.ElderCollector = Mod.CollectorsPreferences.CreateEntry(
+            "Elder_Collector_Limit",
+            new Mod.LimitEntry(false, 100),
+            "Elder Collector Limit"
         );
-
-        #endregion
-
-        #region Elder
-
-        Mod.ElderCollectorCustomToggle = Mod.CollectorsPreferences.CreateEntry(
-            "Elder_Collector_Custom_MaxAmount_Toggle",
-            false,
-            "Elder Collector Custom Max Amount Toggle"
-        );
-
-        Mod.ElderCollectorCustomLimit = Mod.CollectorsPreferences.CreateEntry(
-            "Elder_Collector_Custom_MaxAmount",
-            100,
-            "Elder Collector Custom Max Amount (100)"
-        );
-
-        #endregion
 
         #endregion
 
@@ -124,16 +84,10 @@ public class Preferences
         );
         Mod.FeederPreferences.SetFilePath(configFile, true, false);
 
-        Mod.FeederCustomToggle = Mod.FeederPreferences.CreateEntry(
-            "Feeder_Custom_MaxAmount_Toggle",
-            false,
-            "Feeder Custom Max Amount Toggle"
-        );
-
-        Mod.FeederCustomLimit = Mod.FeederPreferences.CreateEntry(
-            "Feeder_Custom_MaxAmount",
-            100,
-            "Feeder Custom Max Amount (100)"
+        Mod.Feeder = Mod.FeederPreferences.CreateEntry(
+            "Feeder_Limit",
+            new Mod.LimitEntry(false, 100),
+            "Feeder Limit"
         );
 
         #endregion
@@ -146,16 +100,10 @@ public class Preferences
         );
         Mod.SiloPreferences.SetFilePath(configFile, true, false);
 
-        Mod.SiloCustomToggle = Mod.SiloPreferences.CreateEntry(
-            "Silo_Custom_MaxAmount_Toggle",
-            false,
-            "Silo Custom Max Amount Toggle"
-        );
-
-        Mod.SiloCustomLimit = Mod.SiloPreferences.CreateEntry(
-            "Silo_Custom_MaxAmount",
-            100,
-            "Silo Custom Max Amount (100)"
+        Mod.Silo = Mod.SiloPreferences.CreateEntry(
+            "Silo_Custom_Limit",
+            new Mod.LimitEntry(false, 100),
+            "Silo Custom Limit"
         );
 
         #endregion

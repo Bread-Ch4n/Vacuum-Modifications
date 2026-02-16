@@ -26,31 +26,29 @@ public class AmmoManager
 
     private static int GetCustomLimit(AmmoSlotDefinition ammoSlot)
     {
-        var rules = new (string Key, Func<bool?> Toggle, Func<int?> Limit)[]
+        var rules = new (string Key, Mod.LimitEntry)[]
         {
-            ("AmmoSlot", () => Mod.PlayerCustomToggle?.Value, () => Mod.PlayerCustomLimit?.Value),
+            ("AmmoSlot", Mod.PlayerPreferenceEntry!.Value),
             (
                 "ElderCollector",
-                () => Mod.ElderCollectorCustomToggle?.Value,
-                () => Mod.ElderCollectorCustomLimit?.Value
+                Mod.ElderCollector!.Value
             ),
             (
                 "PlortCollector",
-                () => Mod.PlortCollectorCustomToggle?.Value,
-                () => Mod.PlortCollectorCustomLimit?.Value
+                Mod.PlortCollector!.Value
             ),
-            ("Feeder", () => Mod.FeederCustomToggle?.Value, () => Mod.FeederCustomLimit?.Value),
-            ("Silo", () => Mod.SiloCustomToggle?.Value, () => Mod.SiloCustomLimit?.Value)
+            ("Feeder", Mod.Feeder!.Value),
+            ("Silo", Mod.Silo!.Value)
         };
 
-        foreach (var (key, toggle, limit) in rules)
+        foreach (var (key, limitEntry) in rules)
             if (
                 ammoSlot.name.Contains(key, StringComparison.OrdinalIgnoreCase)
                 || ammoSlot.name == key
             )
-                return toggle() == true ? limit() ?? -1 : -1;
+                return limitEntry.Enabled ? limitEntry.Limit : -1;
 
-        MelonLogger.Msg($"Unknown Ammo Slot {ammoSlot.name}");
+        MelonDebug.Msg($"Unknown Ammo Slot {ammoSlot.name}");
         return -1;
     }
 }

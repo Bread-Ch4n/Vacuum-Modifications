@@ -11,7 +11,7 @@ using VacuumModifications;
 [assembly: MelonInfo(
     typeof(Mod),
     "Vacuum Modifications",
-    "2.1.4",
+    "2.2.4",
     "Bread-Chan",
     "https://www.nexusmods.com/slimerancher2/mods/45"
 )]
@@ -21,6 +21,8 @@ namespace VacuumModifications;
 
 public class Mod : MelonMod
 {
+    private static InputAction? _instaVacpackAction;
+
     #region Patches
 
     private class VacuumCooldown
@@ -29,8 +31,8 @@ public class Mod : MelonMod
         [HarmonyPrefix]
         private static void VacuumItem_Start(VacuumItem __instance)
         {
-            if (VacShootCooldownToggle!.Value)
-                __instance.ShootCooldown = (float)VacShootCooldown!.Value;
+            if (VacShootCooldown!.Value.Enabled)
+                __instance.ShootCooldown = (float)VacShootCooldown!.Value.Cooldown;
         }
     }
 
@@ -72,7 +74,7 @@ public class Mod : MelonMod
         [HarmonyPrefix]
         private static bool WeaponVacuumExpelPatch(VacuumItem __instance)
         {
-            if (!Keyboard.current[InstaVacpackHotkey?.Value ?? Key.LeftCtrl].isPressed)
+            if (!_instaVacpackAction!.IsPressed())
                 return true;
             if (Player == null || !Player.Ammo.HasSelectedAmmo() || Player.VacuumItem == null)
                 return false;
@@ -131,6 +133,7 @@ public class Mod : MelonMod
 
         #region Consume
 
+        // TODO: fix insta suck up liquids. Probably broken cause of InstaGrab patch.
         [HarmonyPatch(
             typeof(VacuumItem),
             nameof(VacuumItem.ConsumeLiquid),
@@ -139,7 +142,7 @@ public class Mod : MelonMod
         [HarmonyPrefix]
         private static bool VacuumItem_ConsumeLiquid_1(LiquidSourceSurface source)
         {
-            if (!Keyboard.current[InstaVacpackHotkey?.Value ?? Key.LeftCtrl].isPressed)
+            if (!_instaVacpackAction!.IsPressed())
                 return true;
             if (Player == null || Player.VacuumItem == null)
                 return true;
@@ -168,7 +171,7 @@ public class Mod : MelonMod
         [HarmonyPrefix]
         private static bool InstaGrab(VacuumItem __instance, HashSet<GameObject> inVac)
         {
-            if (!Keyboard.current[InstaVacpackHotkey?.Value ?? Key.LeftCtrl].isPressed)
+            if (!_instaVacpackAction!.IsPressed())
                 return true;
             __instance._vacMode = VacuumItem.VacMode.NONE;
             if (Player == null || Player.VacuumItem == null)
@@ -261,7 +264,7 @@ public class Mod : MelonMod
 
     #region MoreVaccables Compatibility Variables
 
-    public readonly static bool IsMoreVaccablesInstalled =
+    public static readonly bool IsMoreVaccablesInstalled =
         FindMelon("MoreVaccablesMod", "Atmudia") != null;
 
     public static IdentifiableTypeGroup? LargoGroup;
@@ -272,30 +275,44 @@ public class Mod : MelonMod
 
     #region Preference Variables
 
-    public static MelonPreferences_Category? PlayerPreferences;
-    public static MelonPreferences_Entry<bool>? InstaVacpackToggle;
-    public static MelonPreferences_Entry<Key>? InstaVacpackHotkey;
-    public static MelonPreferences_Entry<bool>? VacShootCooldownToggle;
-    public static MelonPreferences_Entry<bool>? PlayerCustomToggle;
-    public static MelonPreferences_Entry<double>? VacShootCooldown;
-    public static MelonPreferences_Entry<int>? PlayerCustomLimit;
+    public class InstaVacpackEntry(bool enabled, List<string> hotkeys)
+    {
+        public bool Enabled = enabled;
+        public List<string> Hotkeys = hotkeys;
+    }
 
-    public static MelonPreferences_Category? CollectorsPreferences;
-    public static MelonPreferences_Entry<bool>? PlortCollectorCustomToggle;
-    public static MelonPreferences_Entry<bool>? ElderCollectorCustomToggle;
-    public static MelonPreferences_Entry<int>? PlortCollectorCustomLimit;
-    public static MelonPreferences_Entry<int>? ElderCollectorCustomLimit;
+    public class VacpackCooldownEntry(bool enabled, double cooldown)
+    {
+        public double Cooldown = cooldown;
+        public bool Enabled = enabled;
+    }
 
-    public static MelonPreferences_Category? FeederPreferences;
-    public static MelonPreferences_Entry<bool>? FeederCustomToggle;
-    public static MelonPreferences_Entry<int>? FeederCustomLimit;
 
-    public static MelonPreferences_Category? SiloPreferences;
-    public static MelonPreferences_Entry<bool>? SiloCustomToggle;
-    public static MelonPreferences_Entry<int>? SiloCustomLimit;
+    public class LimitEntry(bool enabled, int limit)
+    {
+        public bool Enabled = enabled;
+        public int Limit = limit;
+    }
 
     public static MelonPreferences_Category? CompatibilityPreferences;
     public static MelonPreferences_Entry<bool>? HalfForMoreVaccablesModLargos;
+
+    public static MelonPreferences_Category? PlayerPreferences;
+    public static MelonPreferences_Entry<InstaVacpackEntry>? InstaVacpackPreferenceEntry;
+
+    public static MelonPreferences_Entry<VacpackCooldownEntry>? VacShootCooldown;
+
+    public static MelonPreferences_Entry<LimitEntry>? PlayerPreferenceEntry;
+
+    public static MelonPreferences_Category? CollectorsPreferences;
+    public static MelonPreferences_Entry<LimitEntry>? PlortCollector;
+    public static MelonPreferences_Entry<LimitEntry>? ElderCollector;
+
+    public static MelonPreferences_Category? FeederPreferences;
+    public static MelonPreferences_Entry<LimitEntry>? Feeder;
+
+    public static MelonPreferences_Category? SiloPreferences;
+    public static MelonPreferences_Entry<LimitEntry>? Silo;
 
     #endregion
 
@@ -306,16 +323,25 @@ public class Mod : MelonMod
         Preferences.Init();
         var h = new HarmonyLib.Harmony("com.bread-chan.vacuum_modifications");
 
-        if (VacShootCooldownToggle!.Value)
+        if (VacShootCooldown!.Value.Enabled)
             h.PatchAll(typeof(VacuumCooldown));
-        if (InstaVacpackToggle!.Value)
+        if (InstaVacpackPreferenceEntry!.Value.Enabled)
+        {
             h.PatchAll(typeof(InstaVacpack));
+            _instaVacpackAction = new InputAction(
+                "InstaVacpack",
+                InputActionType.Button
+            );
+            InstaVacpackPreferenceEntry!.Value.Hotkeys.ForEach(key => { _instaVacpackAction.AddBinding(key); });
+            _instaVacpackAction.Enable();
+        }
+
         if (
-            PlayerCustomToggle!.Value
-            || PlortCollectorCustomToggle!.Value
-            || ElderCollectorCustomToggle!.Value
-            || FeederCustomToggle!.Value
-            || SiloCustomToggle!.Value
+            PlayerPreferenceEntry!.Value.Enabled
+            || PlortCollector!.Value.Enabled
+            || ElderCollector!.Value.Enabled
+            || Feeder!.Value.Enabled
+            || Silo!.Value.Enabled
         )
             h.PatchAll(typeof(CustomItemLimits));
 
@@ -324,8 +350,16 @@ public class Mod : MelonMod
 
     public override void OnSceneWasLoaded(int buildIndex, string sceneName)
     {
-        if (sceneName == "PlayerCore")
-            Player = SRSingleton<SceneContext>.Instance.PlayerState;
+        switch (sceneName)
+        {
+            case "PlayerCore":
+                Player = SRSingleton<SceneContext>.Instance.PlayerState;
+                break;
+            case "SystemCore":
+                InputDumper.DumpAllBindings();
+                break;
+        }
+
         LargoGroup = Utils.Get<IdentifiableTypeGroup>("LargoGroup");
     }
 

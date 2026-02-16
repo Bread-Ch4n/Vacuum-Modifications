@@ -112,7 +112,7 @@ public class Utils
         if (go.TryGetComponent<ScorePlort>(out var marketplace))
             return new Containers.MarketplaceContainer(id, marketplace);
 
-        MelonLogger.Msg($"Unknown Container! {go.name}");
+        MelonDebug.Msg($"Unknown Container! {go.name}");
 
         return null;
     }
