@@ -5,7 +5,7 @@ namespace VacuumModifications;
 
 public class AmmoManager
 {
-    public static int CalculateMaxAmmoAmount(AmmoSlotDefinition? ammoSlot, IdentifiableType? id)
+    public static int CalculateMaxAmmoAmount(AmmoSlotDefinition ammoSlot, IdentifiableType id)
     {
         if (ammoSlot == null)
             return -1;

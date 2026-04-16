@@ -11,6 +11,10 @@ public static class InputDumper
 
     public static void DumpAllBindings()
     {
+        var directory = Path.GetDirectoryName(OutputPath);
+        if (directory != null)
+            Directory.CreateDirectory(directory);
+
         const string warning =
             "WARNING: Ensure that keyboard, gamepad, and mouse are connected before launching the game, " +
             "otherwise some bindings may not be detected.";
@@ -26,8 +30,9 @@ public static class InputDumper
             if (Keyboard.current != null && Keyboard.current.allKeys.Count > 0)
                 foreach (var key in Keyboard.current.allKeys)
                 {
+                    if (key == null) continue; // guard against null entries in allKeys
                     var path = AddAngleBrackets(key.path);
-                    writer.WriteLine(path); // e.g., <Keyboard>/a
+                    writer.WriteLine(path);
                 }
             else
                 writer.WriteLine("Keyboard not detected.");

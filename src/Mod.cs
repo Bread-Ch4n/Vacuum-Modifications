@@ -11,7 +11,7 @@ using VacuumModifications;
 [assembly: MelonInfo(
     typeof(Mod),
     "Vacuum Modifications",
-    "2.2.4",
+    "2.2.5",
     "Bread-Chan",
     "https://www.nexusmods.com/slimerancher2/mods/45"
 )]

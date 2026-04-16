@@ -2,17 +2,17 @@
     <PropertyGroup>
         <TargetFramework>net6.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
         <PlatformTarget>x64</PlatformTarget>
         <GenerateDependencyFile>false</GenerateDependencyFile>
         <DebugType>embedded</DebugType>
         <LangVersion>12</LangVersion>
+        <Nullable>enable</Nullable>
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="HarmonyX" Version="2.15.0"/>
+        <PackageReference Include="HarmonyX" Version="2.16.1"/>
         <PackageReference Include="Il2CppInterop.Runtime" Version="1.5.1"/>
-        <PackageReference Include="LavaGang.MelonLoader" Version="0.7.1"/>
+        <PackageReference Include="LavaGang.MelonLoader" Version="0.7.2"/>
     </ItemGroup>
 
     <PropertyGroup Condition="'$(Configuration)' == 'Release'">
@@ -35,33 +35,13 @@
         <Compile Include="src\Containers.cs"/>
         <Compile Include="src\InputDumper.cs"/>
         <Compile Include="src\Mod.cs"/>
+        <Compile Include="src\NullableFix.cs"/>
         <Compile Include="src\Preferences.cs"/>
         <Compile Include="src\Utils.cs"/>
     </ItemGroup>
 
-    <PropertyGroup>
-        <LibFolder>..\..\..\SteamLibrary\steamapps\common\Slime Rancher 2\MelonLoader\Il2CppAssemblies\</LibFolder>
-    </PropertyGroup>
-
     <ItemGroup>
-        <Reference Include="Assembly-CSharp">
-            <HintPath>$(LibFolder)Assembly-CSharp.dll</HintPath>
-        </Reference>
-        <Reference Include="Il2Cppmscorlib">
-            <HintPath>$(LibFolder)Il2Cppmscorlib.dll</HintPath>
-        </Reference>
-        <Reference Include="Il2CppSystem.Core">
-            <HintPath>$(LibFolder)Il2CppSystem.Core.dll</HintPath>
-        </Reference>
-        <Reference Include="Unity.InputSystem">
-            <HintPath>$(LibFolder)Unity.InputSystem.dll</HintPath>
-        </Reference>
-        <Reference Include="UnityEngine.CoreModule">
-            <HintPath>$(LibFolder)UnityEngine.CoreModule.dll</HintPath>
-        </Reference>
-        <Reference Include="UnityEngine.PhysicsModule">
-            <HintPath>$(LibFolder)UnityEngine.PhysicsModule.dll</HintPath>
-        </Reference>
+        <Reference Include="./Libs/**/*.dll"/>
         <Reference Update="@(Reference)">
             <Private>false</Private>
         </Reference>

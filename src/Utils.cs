@@ -26,7 +26,7 @@ public class Utils
         return hitInfo.collider?.gameObject;
     }
 
-    public static bool tryTransferMaxAmount(AmmoSlot? source, AmmoSlot? target)
+    public static bool tryTransferMaxAmount(AmmoSlot source, AmmoSlot target)
     {
         if (
             source == null

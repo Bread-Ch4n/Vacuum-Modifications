@@ -70,7 +70,7 @@ public class Containers
         public int Count => AmmoSlot.Count;
         public int MaxCount => AmmoSlot.MaxCount;
         public bool CanRemove => Count > 0;
-        public bool CanAdd => _silo.CanAccept(_id);
+        public bool CanAdd => _silo.CanAnySlotAccept(new AmmoSlot.AmmoMetadata(_id));
 
         public bool Add(int count)
         {
@@ -109,7 +109,7 @@ public class Containers
         public int Count => AmmoSlot.Count;
         public int MaxCount => AmmoSlot.MaxCount;
         public bool CanRemove => Count > 0;
-        public bool CanAdd => _silo.CanAccept(_id);
+        public bool CanAdd => _silo.CanAnySlotAccept(new AmmoSlot.AmmoMetadata(_id));
 
         public bool Add(int count)
         {
@@ -148,7 +148,7 @@ public class Containers
         public int Count => _silo.GetSlotCount(0);
         public int MaxCount => _silo.GetSlotMaxCount(0);
         public bool CanRemove => Count > 0;
-        public bool CanAdd => _silo.CanAccept(_id);
+        public bool CanAdd => _silo.CanAnySlotAccept(new AmmoSlot.AmmoMetadata(_id));
 
         public bool Add(int count)
         {
