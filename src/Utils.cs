@@ -26,7 +26,21 @@ public class Utils
         return hitInfo.collider?.gameObject;
     }
 
-    public static bool tryTransferMaxAmount(AmmoSlot source, AmmoSlot target)
+
+    /// <summary>
+    ///     Transfers as much as possible from <paramref name="source" /> into <paramref name="target" />,
+    ///     limited by the target's remaining space and the source's available count.
+    /// </summary>
+    /// <param name="source">The <see cref="AmmoSlot" /> to transfer items from.</param>
+    /// <param name="target">
+    ///     The <see cref="AmmoSlot" /> to transfer items into. Must be empty or hold the same item type as
+    ///     <paramref name="source" />.
+    /// </param>
+    /// <returns>
+    ///     <see langword="true" /> if any amount was transferred, <see langword="false" /> if the slots ids don't match, the
+    ///     slot is null or nothing was transferred.
+    /// </returns>
+    public static bool tryTransferMaxAmount(AmmoSlot? source, AmmoSlot? target)
     {
         if (
             source == null
@@ -36,33 +50,39 @@ public class Utils
         )
             return false;
 
-        var val2 = Math.Max(0, target.MaxCount - target.Count);
-        var count = Math.Min(source.Count, val2);
+        var spaceAvailableInTarget = Math.Max(0, target.MaxCount - target.Count);
+        var amountToTransferToTarget = Math.Min(source.Count, spaceAvailableInTarget);
+
+        if (amountToTransferToTarget <= 0)
+            return false;
 
         if (target.Id == null)
-        {
             target.Id = source.Id;
-            target.Count = count;
-        }
-        else
-        {
-            if (count <= 0)
-                return false;
-            target.Count += count;
-        }
 
-        source.Count -= count;
+        target.Count += amountToTransferToTarget;
+        source.Count -= amountToTransferToTarget;
 
         if (source.Count <= 0)
             source.Id = null;
+
         return true;
     }
 
+
+    /// <summary>
+    ///     Checks whether the given SiloCatcher belongs is an Automatic Feeder.
+    /// </summary>
+    /// <param name="siloCatcher">
+    ///     <see cref="SiloCatcher" />
+    /// </param>
+    /// <returns>
+    ///     <see langword="true" /> If the SiloCatcher is an Automatic Feeder and <see langword="false" /> if it's not an
+    ///     Automatic Feeder
+    /// </returns>
     private static bool isSlimeFeeder(SiloCatcher siloCatcher)
     {
         var slimeFeeder = siloCatcher.gameObject.transform.parent.parent;
-        var siloStorage = slimeFeeder.GetComponent<SiloStorage>();
-        return siloStorage && slimeFeeder.name.Contains("SlimeFeeder");
+        return slimeFeeder.GetComponent<SiloStorage>() && slimeFeeder.name.Contains("SlimeFeeder");
     }
 
     public static Containers.IItemContainer? tryGetContainer(
@@ -91,8 +111,11 @@ public class Utils
 
                 case SiloCatcherType.SILO_OUTPUT_ONLY:
                 {
+                    // PlortCollector and SprinkleCanister are practically the same, but keeping it separate here in case of a future update.
                     if (siloCatcher._storageSilo.name.Contains("PlortCollector"))
                         return new Containers.PlortCollector(id, siloCatcher);
+                    if (siloCatcher._storageSilo.name.Contains("SprinkleCanister"))
+                        return new Containers.SprinkleCanister(id, siloCatcher);
                     break;
                 }
 
@@ -106,29 +129,49 @@ public class Utils
                     break;
 
                 default:
-                    throw new ArgumentOutOfRangeException();
+                    throw new InvalidOperationException($"Unhandled SiloCatcherType: {siloCatcher.Type}");
             }
 
-        if (go.TryGetComponent<ScorePlort>(out var marketplace))
-            return new Containers.MarketplaceContainer(id, marketplace);
+        if (go.TryGetComponent<ScorePlort>(out var scorePlort))
+        {
+            if (scorePlort._isCaretakerShop) return new Containers.CaretakerShop(id, scorePlort);
+
+            return new Containers.MarketplaceContainer(id, scorePlort);
+        }
+
 
         MelonDebug.Msg($"Unknown Container! {go.name}");
 
         return null;
     }
 
+
+    /// <summary>Determines the target ammo slot for a given item id in the player's inventory.</summary>
+    /// <param name="id">The item id to find a slot for.</param>
+    /// <returns>
+    ///     The <see cref="AmmoSlot" /> to use, selected in this order of priority:
+    ///     <list type="number">
+    ///         <item>
+    ///             <description>A slot already containing the same <paramref name="id" />, if one exists.</description>
+    ///         </item>
+    ///         <item>
+    ///             <description>The currently selected slot, if it can accept this <paramref name="id" />.</description>
+    ///         </item>
+    ///         <item>
+    ///             <description>The slot found by <see cref="AmmoSlotManager.TryFindSlot" />, if any.</description>
+    ///         </item>
+    ///     </list>
+    ///     Returns <see langword="null" /> if none of the above apply.
+    /// </returns>
     public static AmmoSlot? FindTargetSlot(IdentifiableType id)
     {
         var playerAmmo = Mod.Player!.Ammo;
-        var selected = playerAmmo.SelectedSlot;
-
+        var ammoMetadata = new AmmoSlot.AmmoMetadata(id);
         var matchingSlot = playerAmmo.Slots.FirstOrDefault(slot => slot.Id == id);
-        if (matchingSlot != null)
-            return matchingSlot;
 
-        if (selected.Id == id || selected.Id == null)
-            return selected;
-
-        return playerAmmo.Slots.FirstOrDefault(slot => slot.Id == null && slot.IsUnlocked);
+        playerAmmo.TryFindSlot(ammoMetadata, out var ammoSlotIndex);
+        return matchingSlot ?? (playerAmmo.CouldAddToSelectedSlot(ammoMetadata)
+            ? playerAmmo.Slots[playerAmmo._selectedAmmoIdx]
+            : playerAmmo.Slots[ammoSlotIndex] ?? null);
     }
 }

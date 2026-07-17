@@ -11,7 +11,7 @@ using VacuumModifications;
 [assembly: MelonInfo(
     typeof(Mod),
     "Vacuum Modifications",
-    "2.2.5",
+    "2.3.5",
     "Bread-Chan",
     "https://www.nexusmods.com/slimerancher2/mods/45"
 )]
@@ -88,43 +88,19 @@ public class Mod : MelonMod
 
             var container = Utils.tryGetContainer(pointedAt, sourceSlot.Id);
 
-            switch (container)
+            var added = container switch
             {
-                case Containers.MarketplaceContainer marketplaceContainer:
-                {
-                    if (marketplaceContainer.Add(sourceSlot.Count))
-                        __instance.ShootEffect(.5f);
-                    break;
-                }
+                Containers.MarketplaceContainer c => c.Add(sourceSlot.Count),
+                Containers.CaretakerShop c => c.Add(sourceSlot.Count),
+                Containers.SiloContainer c => c.Add(sourceSlot.Count),
+                Containers.WarpDepotContainer c => c.Add(sourceSlot.Count),
+                Containers.RefineryContainer c => c.Add(sourceSlot.Count),
+                Containers.FeederContainer c => c.Add(sourceSlot.Count),
+                _ => false
+            };
 
-                case Containers.SiloContainer siloContainer:
-                {
-                    if (siloContainer.Add(sourceSlot.Count))
-                        __instance.ShootEffect(.5f);
-                    break;
-                }
-
-                case Containers.WarpDepotContainer siloContainer:
-                {
-                    if (siloContainer.Add(sourceSlot.Count))
-                        __instance.ShootEffect(.5f);
-                    break;
-                }
-
-                case Containers.RefineryContainer refineryContainer:
-                {
-                    if (refineryContainer.Add(sourceSlot.Count))
-                        __instance.ShootEffect(.5f);
-                    break;
-                }
-
-                case Containers.FeederContainer feederContainer:
-                {
-                    if (feederContainer.Add(sourceSlot.Count))
-                        __instance.ShootEffect(.5f);
-                    break;
-                }
-            }
+            if (added)
+                __instance.ShootEffect(.5f);
 
             return false;
         }
@@ -178,77 +154,35 @@ public class Mod : MelonMod
                 return false;
 
             var pointedAt = Utils.tryGetPointedObject(Player.VacuumItem);
-            if (!pointedAt || pointedAt?.name != "triggerDeposit")
+            if (!pointedAt || (pointedAt?.name != "triggerDeposit" && pointedAt?.name != "triggerOutput"))
                 return false;
 
             var container = Utils.tryGetContainer(pointedAt);
 
-            switch (container)
+            var (id, ammoSlot) = container switch
             {
-                case Containers.SiloContainer siloContainer:
-                {
-                    var targetSlot = Utils.FindTargetSlot(siloContainer.Id);
-                    if (targetSlot == null)
-                        return false;
-                    var transferSucceeded = Utils.tryTransferMaxAmount(
-                        siloContainer.AmmoSlot,
-                        targetSlot
-                    );
-                    if (transferSucceeded)
-                        __instance.CaptureEffect();
-                    else
-                        __instance.CaptureFailedEffect();
-                    break;
-                }
+                Containers.SiloContainer c => (c.Id, c.AmmoSlot),
+                Containers.WarpDepotContainer c => (c.Id, c.AmmoSlot),
+                Containers.FeederContainer c => (c.Id, c.AmmoSlot),
+                Containers.PlortCollector c => (c.Id, c.AmmoSlot),
+                Containers.SprinkleCanister c => (c.Id, c.AmmoSlot),
+                _ => default
+            };
 
-                case Containers.WarpDepotContainer warpDepotContainer:
-                {
-                    var targetSlot = Utils.FindTargetSlot(warpDepotContainer.Id);
-                    if (targetSlot == null)
-                        return false;
-                    var transferSucceeded = Utils.tryTransferMaxAmount(
-                        warpDepotContainer.AmmoSlot,
-                        targetSlot
-                    );
-                    if (transferSucceeded)
-                        __instance.CaptureEffect();
-                    else
-                        __instance.CaptureFailedEffect();
-                    break;
-                }
-
-                case Containers.FeederContainer feederContainer:
-                {
-                    var targetSlot = Utils.FindTargetSlot(feederContainer.Id);
-                    if (targetSlot == null)
-                        return false;
-                    var transferSucceeded = Utils.tryTransferMaxAmount(
-                        feederContainer.AmmoSlot,
-                        targetSlot
-                    );
-                    if (transferSucceeded)
-                        __instance.CaptureEffect();
-                    else
-                        __instance.CaptureFailedEffect();
-                    break;
-                }
-
-                case Containers.PlortCollector plortCollector:
-                {
-                    var targetSlot = Utils.FindTargetSlot(plortCollector.Id);
-                    if (targetSlot == null)
-                        return false;
-                    var transferSucceeded = Utils.tryTransferMaxAmount(
-                        plortCollector.AmmoSlot,
-                        targetSlot
-                    );
-                    if (transferSucceeded)
-                        __instance.CaptureEffect();
-                    else
-                        __instance.CaptureFailedEffect();
-                    break;
-                }
+            if (ammoSlot == null)
+            {
+                MelonLogger.Msg("ammoSlot null");
+                return false;
             }
+
+            var targetSlot = Utils.FindTargetSlot(id);
+            if (targetSlot == null)
+                return false;
+
+            if (Utils.tryTransferMaxAmount(ammoSlot, targetSlot))
+                __instance.CaptureEffect();
+            else
+                __instance.CaptureFailedEffect();
 
             return false;
         }

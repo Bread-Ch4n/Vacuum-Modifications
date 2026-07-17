@@ -1,4 +1,5 @@
 using Il2Cpp;
+using Il2CppMonomiPark.SlimeRancher.Economy;
 using Il2CppMonomiPark.SlimeRancher.Player;
 
 namespace VacuumModifications;
@@ -16,22 +17,13 @@ public class Containers
         bool Remove(int count);
     }
 
-    public class MarketplaceContainer : IItemContainer
+    public class MarketplaceContainer(IdentifiableType id, ScorePlort marketplace) : IItemContainer
     {
-        private readonly IdentifiableType _id;
-        private readonly ScorePlort _marketplace;
-
-        public MarketplaceContainer(IdentifiableType id, ScorePlort marketplace)
-        {
-            _id = id;
-            _marketplace = marketplace;
-        }
-
         public IdentifiableType Id => null!;
         public int Count => 0;
         public int MaxCount => int.MaxValue;
         public bool CanRemove => false;
-        public bool CanAdd => _marketplace.CanDroneDeposit(_id);
+        public bool CanAdd => marketplace.CanDroneDeposit(id);
 
         public bool Add(int count)
         {
@@ -41,7 +33,7 @@ public class Containers
             if (player == null)
                 return false;
 
-            _marketplace.Deposit(_id, count);
+            marketplace.Deposit(id, count);
 
             player.Ammo.SelectedSlot.Count = 0;
             player.Ammo.SelectedSlot.Id = null;
@@ -51,26 +43,42 @@ public class Containers
         public bool Remove(int count) => false;
     }
 
-    public class SiloContainer : IItemContainer
+    public class CaretakerShop(IdentifiableType id, ScorePlort sprinkleTrader) : IItemContainer
     {
-        private readonly IdentifiableType _id;
-        private readonly SiloStorage _silo;
-        private readonly SiloCatcher _siloCatcher;
+        public IdentifiableType Id => null!;
+        public int Count => 0;
+        public int MaxCount => int.MaxValue;
+        public bool CanRemove => false;
+        public bool CanAdd => sprinkleTrader._sprinkleType == id;
 
-        public SiloContainer(IdentifiableType id, SiloCatcher siloCatcher)
+        public bool Add(int count)
         {
-            _id = id;
-            _siloCatcher = siloCatcher;
-            _silo = siloCatcher._storageSilo;
+            if (!CanAdd)
+                return false;
+            var player = Mod.Player;
+            if (player == null)
+                return false;
+
+            SRSingleton<SceneContext>.Instance.PlayerState.AddCurrency(
+                sprinkleTrader._sprinkleCurrency.Cast<ICurrency>(), count);
+            player.Ammo.SelectedSlot.Id = null;
+            return true;
         }
 
-        public AmmoSlot AmmoSlot => _silo.Ammo.Slots[_siloCatcher.SlotIdx];
+        public bool Remove(int count) => false;
+    }
+
+    public class SiloContainer(IdentifiableType id, SiloCatcher siloCatcher) : IItemContainer
+    {
+        private readonly SiloStorage _silo = siloCatcher._storageSilo;
+
+        public AmmoSlot AmmoSlot => _silo.Ammo.Slots[siloCatcher.SlotIdx];
 
         public IdentifiableType Id => AmmoSlot.Id;
         public int Count => AmmoSlot.Count;
         public int MaxCount => AmmoSlot.MaxCount;
         public bool CanRemove => Count > 0;
-        public bool CanAdd => _silo.CanAnySlotAccept(new AmmoSlot.AmmoMetadata(_id));
+        public bool CanAdd => _silo.CanAnySlotAccept(new AmmoSlot.AmmoMetadata(id));
 
         public bool Add(int count)
         {
@@ -85,31 +93,23 @@ public class Containers
         {
             if (!CanRemove)
                 return false;
-            AmmoSlot.Count = Math.Min(0, AmmoSlot.Count - count);
+            AmmoSlot.Count = Math.Max(0, AmmoSlot.Count - count);
             return true;
         }
     }
 
-    public class WarpDepotContainer : IItemContainer
+    public class WarpDepotContainer(IdentifiableType id, SiloCatcher siloCatcher) : IItemContainer
     {
-        private readonly IdentifiableType _id;
-        private readonly LinkedSiloStorage _silo;
-        private readonly SiloCatcher _siloCatcher;
-
-        public WarpDepotContainer(IdentifiableType id, SiloCatcher siloCatcher)
-        {
-            _id = id;
-            _siloCatcher = siloCatcher;
-            _silo = siloCatcher._storageSilo.Cast<LinkedSiloStorage>() ?? throw new InvalidOperationException();
-        }
+        private readonly LinkedSiloStorage _silo = siloCatcher._storageSilo.Cast<LinkedSiloStorage>() ??
+                                                   throw new InvalidOperationException();
 
         public AmmoSlot AmmoSlot => _silo._linkedAmmo.Slots[_silo._linkedAmmo._selectedAmmoIdx];
 
-        public IdentifiableType Id => _silo.GetSlotIdentifiable(_siloCatcher.SlotIdx);
+        public IdentifiableType Id => _silo.GetSlotIdentifiable(siloCatcher.SlotIdx);
         public int Count => AmmoSlot.Count;
         public int MaxCount => AmmoSlot.MaxCount;
         public bool CanRemove => Count > 0;
-        public bool CanAdd => _silo.CanAnySlotAccept(new AmmoSlot.AmmoMetadata(_id));
+        public bool CanAdd => _silo.CanAnySlotAccept(new AmmoSlot.AmmoMetadata(id));
 
         public bool Add(int count)
         {
@@ -124,23 +124,15 @@ public class Containers
         {
             if (!CanRemove)
                 return false;
-            AmmoSlot.Count = Math.Min(0, AmmoSlot.Count - count);
+            AmmoSlot.Count = Math.Max(0, AmmoSlot.Count - count);
             return true;
         }
     }
 
-    public class FeederContainer : IItemContainer
+    public class FeederContainer(IdentifiableType id, SiloCatcher siloCatcher) : IItemContainer
     {
-        private readonly IdentifiableType _id;
-        private readonly SiloStorage _silo;
-        private readonly SiloCatcher _siloCatcher;
-
-        public FeederContainer(IdentifiableType id, SiloCatcher siloCatcher)
-        {
-            _id = id;
-            _siloCatcher = siloCatcher;
-            _silo = siloCatcher.gameObject.transform.parent.parent.GetComponent<SiloStorage>();
-        }
+        private readonly SiloStorage _silo = siloCatcher.gameObject.transform.parent.parent.GetComponent<SiloStorage>();
+        private readonly SiloCatcher _siloCatcher = siloCatcher;
 
         public AmmoSlot AmmoSlot => _silo.Ammo.Slots[0];
 
@@ -148,7 +140,7 @@ public class Containers
         public int Count => _silo.GetSlotCount(0);
         public int MaxCount => _silo.GetSlotMaxCount(0);
         public bool CanRemove => Count > 0;
-        public bool CanAdd => _silo.CanAnySlotAccept(new AmmoSlot.AmmoMetadata(_id));
+        public bool CanAdd => _silo.CanAnySlotAccept(new AmmoSlot.AmmoMetadata(id));
 
         public bool Add(int count)
         {
@@ -163,27 +155,20 @@ public class Containers
         {
             if (!CanRemove)
                 return false;
-            AmmoSlot.Count = Math.Min(0, AmmoSlot.Count - count);
+            AmmoSlot.Count = Math.Max(0, AmmoSlot.Count - count);
             return true;
         }
     }
 
-    public class PlortCollector : IItemContainer
+    public abstract class OutputOnlyContainer(
+        IdentifiableType id,
+        SiloCatcher siloCatcher,
+        SiloStorage? siloStorage = null)
+        : IItemContainer
     {
-        private readonly IdentifiableType _id;
-        private readonly SiloStorage _silo;
-        private readonly SiloCatcher _siloCatcher;
-
-        public PlortCollector(
-            IdentifiableType id,
-            SiloCatcher siloCatcher,
-            SiloStorage? siloStorage = null
-        )
-        {
-            _id = id;
-            _siloCatcher = siloCatcher;
-            _silo = siloStorage ?? siloCatcher._storageSilo;
-        }
+        protected readonly IdentifiableType _id = id;
+        protected readonly SiloStorage _silo = siloStorage ?? siloCatcher._storageSilo;
+        protected readonly SiloCatcher _siloCatcher = siloCatcher;
 
         public AmmoSlot AmmoSlot => _silo.Ammo.Slots[_siloCatcher.SlotIdx];
 
@@ -199,29 +184,28 @@ public class Containers
         {
             if (!CanRemove)
                 return false;
-            AmmoSlot.Count = Math.Min(0, AmmoSlot.Count - count);
+            AmmoSlot.Count = Math.Max(0, AmmoSlot.Count - count);
             return true;
         }
     }
 
-    public class RefineryContainer : IItemContainer
-    {
-        private readonly IdentifiableType _id;
-        private readonly SiloCatcher _siloCatcher;
+    public class PlortCollector(IdentifiableType id, SiloCatcher siloCatcher, SiloStorage? siloStorage = null)
+        : OutputOnlyContainer(id, siloCatcher, siloStorage);
 
-        public RefineryContainer(IdentifiableType id, SiloCatcher siloCatcher)
-        {
-            _id = id;
-            _siloCatcher = siloCatcher;
-        }
+    public class SprinkleCanister(IdentifiableType id, SiloCatcher siloCatcher, SiloStorage? siloStorage = null)
+        : OutputOnlyContainer(id, siloCatcher, siloStorage);
+
+    public class RefineryContainer(IdentifiableType id, SiloCatcher siloCatcher) : IItemContainer
+    {
+        private readonly SiloCatcher _siloCatcher = siloCatcher;
 
         public IdentifiableType Id => null!;
-        public int Count => SRSingleton<SceneContext>.Instance.GadgetDirector.GetItemCount(_id);
+        public int Count => SRSingleton<SceneContext>.Instance.GadgetDirector.GetItemCount(id);
         public int MaxCount => GadgetDirector.REFINERY_MAX;
         public bool CanRemove => false;
 
         public bool CanAdd =>
-            SRSingleton<SceneContext>.Instance.GadgetDirector.IsStorable(_id) && Count < MaxCount;
+            SRSingleton<SceneContext>.Instance.GadgetDirector.IsStorable(id) && Count < MaxCount;
 
         public bool Add(int count)
         {
@@ -239,7 +223,7 @@ public class Containers
                 return false;
 
             player.Ammo.SelectedSlot.Count -= toTransfer;
-            SRSingleton<SceneContext>.Instance.GadgetDirector.AddItem(_id, toTransfer);
+            SRSingleton<SceneContext>.Instance.GadgetDirector.AddItem(id, toTransfer);
 
             if (player.Ammo.SelectedSlot.Count <= 0)
                 player.Ammo.SelectedSlot.Id = null;
