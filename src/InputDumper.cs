@@ -9,6 +9,7 @@ public static class InputDumper
     private static readonly string OutputPath =
         Path.Combine(MelonEnvironment.UserDataDirectory, "VacuumModifications", "InputBindingsDump.txt");
 
+
     public static void DumpAllBindings()
     {
         var directory = Path.GetDirectoryName(OutputPath);

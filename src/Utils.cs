@@ -1,4 +1,5 @@
 using Il2Cpp;
+using Il2CppInterop.Runtime;
 using Il2CppMonomiPark.SlimeRancher.Player;
 using Il2CppMonomiPark.SlimeRancher.Player.PlayerItems;
 using MelonLoader;
@@ -13,19 +14,29 @@ public class Utils
         where T : Object =>
         Resources.FindObjectsOfTypeAll<T>().FirstOrDefault((Func<T, bool>)(x => x.name == name))!;
 
-    public static GameObject? tryGetPointedObject(VacuumItem vacpack, float distance = 20f)
+    public static (GameObject? obj, Type? matchedType) tryGetPointedObjectWithComponent(VacuumItem vacpack,
+        float distance, params Type[] componentTypes)
     {
         var transform = vacpack.VacOrigin.transform;
         Physics.Raycast(
             new Ray(transform.position, transform.up),
             out var hitInfo,
             distance,
-            LayerMask.GetMask("Interactable"),
+            LayerMask.GetMask("Interactable", "Water", "Default"),
             QueryTriggerInteraction.Collide
         );
-        return hitInfo.collider?.gameObject;
-    }
+        var obj = hitInfo.collider?.gameObject;
+        if (obj == null) return (null, null);
 
+        foreach (var type in componentTypes)
+        {
+            var il2CppType = Il2CppType.From(type);
+            if (obj.TryGetComponent(il2CppType, out _))
+                return (obj, type);
+        }
+
+        return (null, null);
+    }
 
     /// <summary>
     ///     Transfers as much as possible from <paramref name="source" /> into <paramref name="target" />,

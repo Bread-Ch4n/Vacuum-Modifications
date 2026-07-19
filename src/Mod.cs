@@ -2,6 +2,7 @@
 using Il2Cpp;
 using Il2CppMonomiPark.SlimeRancher.Player;
 using Il2CppMonomiPark.SlimeRancher.Player.PlayerItems;
+using Il2CppMonomiPark.SlimeRancher.UI;
 using Il2CppMonomiPark.SlimeRancher.World;
 using MelonLoader;
 using UnityEngine;
@@ -11,7 +12,7 @@ using VacuumModifications;
 [assembly: MelonInfo(
     typeof(Mod),
     "Vacuum Modifications",
-    "2.3.6",
+    "2.3.7",
     "Bread-Chan",
     "https://www.nexusmods.com/slimerancher2/mods/45"
 )]
@@ -19,9 +20,43 @@ using VacuumModifications;
 
 namespace VacuumModifications;
 
+internal enum RaycastStatus
+{
+    None,
+    InstantVacActive,
+    LookingAtWater,
+    LookingAtContainer
+}
+
 public class Mod : MelonMod
 {
     private static InputAction? _instaVacpackAction;
+
+    private static RaycastStatus _raycastStatus = RaycastStatus.None;
+    private static (GameObject? obj, Type? matched)? _hitObject;
+
+    public override void OnUpdate()
+    {
+        if (Player == null) return;
+        if (_instaVacpackAction!.IsPressed())
+        {
+            var (obj, matched) = Utils.tryGetPointedObjectWithComponent(Player.VacuumItem, 20f,
+                typeof(LiquidSourceSurface), typeof(SiloCatcher), typeof(ScorePlort));
+
+            _hitObject = (obj, matched);
+
+            if (matched == typeof(LiquidSourceSurface))
+                _raycastStatus = RaycastStatus.LookingAtWater;
+            else if (matched == typeof(SiloCatcher) || matched == typeof(ScorePlort))
+                _raycastStatus = RaycastStatus.LookingAtContainer;
+            else _raycastStatus = RaycastStatus.InstantVacActive;
+        }
+        else
+        {
+            _raycastStatus = RaycastStatus.None;
+            _hitObject = null;
+        }
+    }
 
     #region Patches
 
@@ -68,13 +103,39 @@ public class Mod : MelonMod
 
     private class InstaVacpack
     {
+        [HarmonyPatch(typeof(CrosshairUI), nameof(CrosshairUI.Update))]
+        [HarmonyPostfix]
+        private static void CrosshairUI_Update(CrosshairUI __instance)
+        {
+            Color color;
+
+            switch (_raycastStatus)
+            {
+                case RaycastStatus.InstantVacActive:
+                    color = new Color(255 / 255f, 165 / 255f, 0 / 255f);
+                    break;
+                case RaycastStatus.LookingAtWater:
+                    color = new Color(0 / 255f, 150 / 255f, 255 / 255f);
+                    break;
+                case RaycastStatus.LookingAtContainer:
+                    color = new Color(0 / 255f, 200 / 255f, 100 / 255f);
+                    break;
+                default:
+                case RaycastStatus.None:
+                    color = new Color(1, 1, 1);
+                    break;
+            }
+
+            __instance.img.color = color;
+        }
+
         #region Expel
 
         [HarmonyPatch(typeof(VacuumItem), nameof(VacuumItem.Expel), typeof(float))]
         [HarmonyPrefix]
         private static bool WeaponVacuumExpelPatch(VacuumItem __instance)
         {
-            if (!_instaVacpackAction!.IsPressed())
+            if (_raycastStatus is RaycastStatus.InstantVacActive or RaycastStatus.None)
                 return true;
             if (Player == null || !Player.Ammo.HasSelectedAmmo() || Player.VacuumItem == null)
                 return false;
@@ -82,11 +143,11 @@ public class Mod : MelonMod
             if (sourceSlot == null || sourceSlot.Id == null)
                 return false;
 
-            var pointedAt = Utils.tryGetPointedObject(Player.VacuumItem);
-            if (!pointedAt || pointedAt?.name != "triggerDeposit")
+            var (obj, _) = _hitObject!.Value;
+            if (!obj || obj?.name != "triggerDeposit")
                 return false;
 
-            var container = Utils.tryGetContainer(pointedAt, sourceSlot);
+            var container = Utils.tryGetContainer(obj, sourceSlot);
 
             var added = container switch
             {
@@ -109,7 +170,6 @@ public class Mod : MelonMod
 
         #region Consume
 
-        // TODO: fix insta suck up liquids. Probably broken cause of InstaGrab patch.
         [HarmonyPatch(
             typeof(VacuumItem),
             nameof(VacuumItem.ConsumeLiquid),
@@ -118,25 +178,18 @@ public class Mod : MelonMod
         [HarmonyPrefix]
         private static bool VacuumItem_ConsumeLiquid_1(LiquidSourceSurface source)
         {
-            if (!_instaVacpackAction!.IsPressed())
+            if (_raycastStatus != RaycastStatus.LookingAtWater)
                 return true;
             if (Player == null || Player.VacuumItem == null)
                 return true;
 
-            var sameLiquidAndUnlockedSlot = Player.Ammo.Slots.FirstOrDefault(ammoSlot =>
-                ammoSlot.Definition.name.Contains("Liquid")
-                && ammoSlot.IsUnlocked
-                && ammoSlot.Id == source.LiquidIdentifiableType
-            );
+            var slotFound =
+                Player.Ammo.TryFindSlot(new AmmoSlot.AmmoMetadata(source.LiquidIdentifiableType), out var index);
 
-            var emptyLiquidAndUnlockedSlot = Player.Ammo.Slots.FirstOrDefault(ammoSlot =>
-                ammoSlot.Definition.name.Contains("Liquid")
-                && ammoSlot.IsUnlocked
-                && ammoSlot.Id == null
-            );
+            if (!slotFound) return true;
+            var slot = Player.Ammo.Slots[index];
 
-            var slot = sameLiquidAndUnlockedSlot ?? emptyLiquidAndUnlockedSlot;
-            if (slot == null)
+            if (slot == null || !slot.Definition.IsAllowed(source.LiquidIdentifiableType))
                 return true;
             slot.Id = source.LiquidIdentifiableType;
             slot.Count = slot.MaxCount;
@@ -147,17 +200,17 @@ public class Mod : MelonMod
         [HarmonyPrefix]
         private static bool InstaGrab(VacuumItem __instance, HashSet<GameObject> inVac)
         {
-            if (!_instaVacpackAction!.IsPressed())
+            if (_raycastStatus != RaycastStatus.LookingAtContainer)
                 return true;
             __instance._vacMode = VacuumItem.VacMode.NONE;
             if (Player == null || Player.VacuumItem == null)
                 return false;
 
-            var pointedAt = Utils.tryGetPointedObject(Player.VacuumItem);
-            if (!pointedAt || (pointedAt?.name != "triggerDeposit" && pointedAt?.name != "triggerOutput"))
+            var (obj, _) = _hitObject!.Value;
+            if (!obj || (obj?.name != "triggerDeposit" && obj?.name != "triggerOutput"))
                 return false;
 
-            var container = Utils.tryGetContainer(pointedAt);
+            var container = Utils.tryGetContainer(obj);
 
             var ammoSlot = container switch
             {
@@ -171,6 +224,7 @@ public class Mod : MelonMod
 
             if (ammoSlot == null)
             {
+                MelonLogger.Error(obj.name);
                 MelonLogger.Error("ammoSlot null");
                 return false;
             }
