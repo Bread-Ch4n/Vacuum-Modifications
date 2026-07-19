@@ -11,7 +11,7 @@ using VacuumModifications;
 [assembly: MelonInfo(
     typeof(Mod),
     "Vacuum Modifications",
-    "2.3.5",
+    "2.3.6",
     "Bread-Chan",
     "https://www.nexusmods.com/slimerancher2/mods/45"
 )]
@@ -78,7 +78,7 @@ public class Mod : MelonMod
                 return true;
             if (Player == null || !Player.Ammo.HasSelectedAmmo() || Player.VacuumItem == null)
                 return false;
-            var sourceSlot = Player.Ammo.Slots[Player.Ammo._selectedAmmoIdx];
+            var sourceSlot = Player.Ammo.SelectedSlot;
             if (sourceSlot == null || sourceSlot.Id == null)
                 return false;
 
@@ -86,7 +86,7 @@ public class Mod : MelonMod
             if (!pointedAt || pointedAt?.name != "triggerDeposit")
                 return false;
 
-            var container = Utils.tryGetContainer(pointedAt, sourceSlot.Id);
+            var container = Utils.tryGetContainer(pointedAt, sourceSlot);
 
             var added = container switch
             {
@@ -159,23 +159,23 @@ public class Mod : MelonMod
 
             var container = Utils.tryGetContainer(pointedAt);
 
-            var (id, ammoSlot) = container switch
+            var ammoSlot = container switch
             {
-                Containers.SiloContainer c => (c.Id, c.AmmoSlot),
-                Containers.WarpDepotContainer c => (c.Id, c.AmmoSlot),
-                Containers.FeederContainer c => (c.Id, c.AmmoSlot),
-                Containers.PlortCollector c => (c.Id, c.AmmoSlot),
-                Containers.SprinkleCanister c => (c.Id, c.AmmoSlot),
-                _ => default
+                Containers.SiloContainer c => c.AmmoSlot,
+                Containers.WarpDepotContainer c => c.AmmoSlot,
+                Containers.FeederContainer c => c.AmmoSlot,
+                Containers.PlortCollector c => c.AmmoSlot,
+                Containers.SprinkleCanister c => c.AmmoSlot,
+                _ => null
             };
 
             if (ammoSlot == null)
             {
-                MelonLogger.Msg("ammoSlot null");
+                MelonLogger.Error("ammoSlot null");
                 return false;
             }
 
-            var targetSlot = Utils.FindTargetSlot(id);
+            var targetSlot = Utils.FindTargetSlot(ammoSlot.Id);
             if (targetSlot == null)
                 return false;
 

@@ -87,7 +87,7 @@ public class Utils
 
     public static Containers.IItemContainer? tryGetContainer(
         GameObject go,
-        IdentifiableType id = null!
+        AmmoSlot ammoSlot = null!
     )
     {
         if (go.TryGetComponent<SiloCatcher>(out var siloCatcher))
@@ -96,16 +96,16 @@ public class Utils
                 case SiloCatcherType.SILO_DEFAULT:
                 {
                     if (isSlimeFeeder(siloCatcher))
-                        return new Containers.FeederContainer(id, siloCatcher);
+                        return new Containers.FeederContainer(ammoSlot, siloCatcher);
 
                     if (siloCatcher._storageSilo && siloCatcher._storageSilo.name.Contains("Silo"))
-                        return new Containers.SiloContainer(id, siloCatcher);
+                        return new Containers.SiloContainer(ammoSlot, siloCatcher);
 
                     if (
                         siloCatcher._storageSilo.Cast<LinkedSiloStorage>() != null
                         && siloCatcher._storageSilo.name.Contains("WarpDepot")
                     )
-                        return new Containers.WarpDepotContainer(id, siloCatcher);
+                        return new Containers.WarpDepotContainer(ammoSlot, siloCatcher);
                     break;
                 }
 
@@ -113,15 +113,15 @@ public class Utils
                 {
                     // PlortCollector and SprinkleCanister are practically the same, but keeping it separate here in case of a future update.
                     if (siloCatcher._storageSilo.name.Contains("PlortCollector"))
-                        return new Containers.PlortCollector(id, siloCatcher);
+                        return new Containers.PlortCollector(siloCatcher);
                     if (siloCatcher._storageSilo.name.Contains("SprinkleCanister"))
-                        return new Containers.SprinkleCanister(id, siloCatcher);
+                        return new Containers.SprinkleCanister(siloCatcher);
                     break;
                 }
 
                 case SiloCatcherType.REFINERY:
                 {
-                    return new Containers.RefineryContainer(id, siloCatcher);
+                    return new Containers.RefineryContainer(ammoSlot);
                 }
 
                 case SiloCatcherType.DECORIZER:
@@ -134,9 +134,9 @@ public class Utils
 
         if (go.TryGetComponent<ScorePlort>(out var scorePlort))
         {
-            if (scorePlort._isCaretakerShop) return new Containers.CaretakerShop(id, scorePlort);
+            if (scorePlort._isCaretakerShop) return new Containers.CaretakerShop(ammoSlot, scorePlort);
 
-            return new Containers.MarketplaceContainer(id, scorePlort);
+            return new Containers.MarketplaceContainer(ammoSlot, scorePlort);
         }
 
 
