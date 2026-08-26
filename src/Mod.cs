@@ -63,11 +63,12 @@ public class Mod : MelonMod
 
     private class MultiItemPatch
     {
-        private static int FindMatchingSlot(AmmoSlotManager playerAmmo, AmmoSlot.AmmoMetadata metadata)
+        private static int FindMatchingSlot(AmmoSlotManager manager, AmmoSlot.AmmoMetadata metadata)
         {
-            for (int i = 0; i < playerAmmo.Slots.Count; i++)
+
+            for (int i = 0; i < manager.Slots.Count; i++)
             {
-                if (playerAmmo.Slots[i].Id == metadata.Id && playerAmmo.GetSlotSpaceLeft(i) > 0)
+                if (manager.Slots[i].Id == metadata.Id && manager.GetSlotSpaceLeft(i) > 0)
                     return i;
             }
 
@@ -78,6 +79,14 @@ public class Mod : MelonMod
         [HarmonyPrefix]
         private static bool TryFindSlotOverride(AmmoSlotManager __instance, AmmoSlot.AmmoMetadata metadata, out int index, ref bool __result)
         {
+            AmmoSlotManager playerAmmo = Player!.Ammo;
+
+            if (Player == null || __instance != playerAmmo)
+            {
+                index = 0;
+                return true;
+            }
+
             int viableSlot = FindMatchingSlot(__instance, metadata);
 
             if (viableSlot != -1)
@@ -99,7 +108,9 @@ public class Mod : MelonMod
                     continue;
                 if (__instance.GetSlotSpaceLeft(i) <= 0)
                     continue;
-                if (currentSlot.Id != null && currentSlot.Id != metadata.Id)
+                if (currentSlot.Id != null) // Same item type logic is handled at the top.
+                    continue;
+                if (!currentSlot.Definition.IsAllowed(metadata.Id))
                     continue;
 
                 viableSlot = i;
