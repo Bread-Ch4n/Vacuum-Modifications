@@ -1,5 +1,6 @@
 ﻿using HarmonyLib;
 using Il2Cpp;
+using Il2CppMonomiPark.SlimeRancher.Input;
 using Il2CppMonomiPark.SlimeRancher.Player;
 using Il2CppMonomiPark.SlimeRancher.Player.PlayerItems;
 using Il2CppMonomiPark.SlimeRancher.UI;
