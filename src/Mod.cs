@@ -196,9 +196,9 @@ public class Mod : MelonMod
             return true;
         }
 
-        [HarmonyPatch(typeof(VacuumItem), nameof(VacuumItem.Consume))]
+        [HarmonyPatch(typeof(VacuumItem), nameof(VacuumItem.VacTriggered))]
         [HarmonyPrefix]
-        private static bool InstaGrab(VacuumItem __instance, HashSet<GameObject> inVac)
+        private static bool InstaGrab(VacuumItem __instance, InputEventData data)
         {
             if (_raycastStatus != RaycastStatus.LookingAtContainer)
                 return true;
@@ -242,13 +242,10 @@ public class Mod : MelonMod
         }
 
         #endregion
-    }
 
-    #endregion
+        #region Variables
 
-    #region Variables
-
-    public static PlayerState? Player;
+        public static PlayerState? Player;
 
     #region MoreVaccables Compatibility Variables
 
