@@ -178,11 +178,10 @@ public class Utils
     {
         var playerAmmo = Mod.Player!.Ammo;
         var ammoMetadata = new AmmoSlot.AmmoMetadata(id);
-        var matchingSlot = playerAmmo.Slots.FirstOrDefault(slot => slot.Id == id);
+        //var matchingSlot = playerAmmo.Slots.FirstOrDefault(slot => slot.Id == id);
 
-        playerAmmo.TryFindSlot(ammoMetadata, out var ammoSlotIndex);
-        return matchingSlot ?? (playerAmmo.CouldAddToSelectedSlot(ammoMetadata)
-            ? playerAmmo.Slots[playerAmmo._selectedAmmoIdx]
-            : playerAmmo.Slots[ammoSlotIndex] ?? null);
+        bool foundSlot = playerAmmo.TryFindSlot(ammoMetadata, out var ammoSlotIndex);
+
+        return foundSlot ? playerAmmo.Slots[ammoSlotIndex] : null;
     }
 }

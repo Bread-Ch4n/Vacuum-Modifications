@@ -61,6 +61,45 @@ public class Mod : MelonMod
 
     #region Patches
 
+    private class MultiItemPatch
+    {
+        [HarmonyPatch(typeof(AmmoSlotManager), nameof(AmmoSlotManager.TryFindSlot))]
+        [HarmonyPrefix]
+        private static bool TryFindSlotOverride(AmmoSlotManager __instance, AmmoSlot.AmmoMetadata metadata, out int index, ref bool __result)
+        {
+            int viableSlot = -1;
+
+            MelonLogger.Msg($"total slots: {__instance.Slots.Count}");
+
+            for (int i = 0; i < __instance.Slots.Count; i++)
+            {
+                AmmoSlot currentSlot = __instance.Slots[i];
+
+                MelonLogger.Msg($"slot {i}: {currentSlot.Count}/{currentSlot.MaxCount} (space left: {__instance.GetSlotSpaceLeft(i)}) | isUnlocked: {currentSlot.IsUnlocked} | {currentSlot.Id}");
+
+                if (!currentSlot.IsUnlocked)
+                    continue;
+                if (__instance.GetSlotSpaceLeft(i) <= 0)
+                    continue;
+                if (currentSlot.Id != null && currentSlot.Id != metadata.Id)
+                    continue;
+
+                viableSlot = i;
+                break;
+            }
+
+            index = viableSlot >= 0 ? viableSlot : 0;
+            __result = viableSlot >= 0;
+
+            if (__result)
+                MelonLogger.Msg($"found slot: {index}");
+            else
+                MelonLogger.Msg($"no slot found");
+
+            return false;
+        }
+    }
+
     private class VacuumCooldown
     {
         [HarmonyPatch(typeof(VacuumItem), nameof(VacuumItem.Start))]
@@ -311,6 +350,8 @@ public class Mod : MelonMod
     {
         Preferences.Init();
         var h = new HarmonyLib.Harmony("com.bread-chan.vacuum_modifications");
+
+        h.PatchAll(typeof(MultiItemPatch));
 
         if (VacShootCooldown!.Value.Enabled)
             h.PatchAll(typeof(VacuumCooldown));
