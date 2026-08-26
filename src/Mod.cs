@@ -63,6 +63,32 @@ public class Mod : MelonMod
 
     private class MultiItemPatch
     {
+
+        /// <summary>Determines if a slot is viable for the given pending item.</summary>
+        /// <param name="manager">The AmmoSlotManager of the given inventory to run the check on.</param>
+        /// <param name="slotIdx">The slot to run the checks on.</param>
+        /// <param name="metadata">The metadata of the pending item.</param>
+        /// <returns>Returns true if viable, false if not.</returns>
+        private static bool IsSlotViable(AmmoSlotManager manager, int slotIdx, AmmoSlot.AmmoMetadata metadata)
+        {
+            AmmoSlot slot = manager.Slots[slotIdx];
+
+            if (!slot.IsUnlocked)
+                return false;
+            if (manager.GetSlotSpaceLeft(slotIdx) <= 0)
+                return false;
+            if (slot.Id != null && slot.Id != metadata.Id)
+                return false;
+            if (!slot.Definition.IsAllowed(metadata.Id))
+                return false;
+
+            return true;
+        }
+
+        /// <summary>Iterates and compares all slots' id within the given manager and compares to metadata.Id to find a matching non-full slot.</summary>
+        /// <param name="manager">The AmmoSlotManager of the given inventory to run the check on.</param>
+        /// <param name="metadata">The metadata of the pending item.</param>
+        /// <returns>Returns the slotIdx if a matching non-full slot was found. -1 if none of the conditions were met.</returns>
         private static int FindMatchingSlot(AmmoSlotManager manager, AmmoSlot.AmmoMetadata metadata)
         {
 
@@ -79,9 +105,7 @@ public class Mod : MelonMod
         [HarmonyPrefix]
         private static bool TryFindSlotOverride(AmmoSlotManager __instance, AmmoSlot.AmmoMetadata metadata, out int index, ref bool __result)
         {
-            AmmoSlotManager playerAmmo = Player!.Ammo;
-
-            if (Player == null || __instance != playerAmmo)
+            if (__instance != Player!.Ammo)
             {
                 index = 0;
                 return true;
@@ -96,21 +120,16 @@ public class Mod : MelonMod
                 return false;
             }
 
-            MelonLogger.Msg($"total slots: {__instance.Slots.Count}");
+            if (IsSlotViable(__instance, __instance._selectedAmmoIdx, metadata))
+            {
+                index = __instance._selectedAmmoIdx;
+                __result = true;
+                return false;
+            }
 
             for (int i = 0; i < __instance.Slots.Count; i++)
             {
-                AmmoSlot currentSlot = __instance.Slots[i];
-
-                MelonLogger.Msg($"slot {i}: {currentSlot.Count}/{currentSlot.MaxCount} (space left: {__instance.GetSlotSpaceLeft(i)}) | isUnlocked: {currentSlot.IsUnlocked} | {currentSlot.Id}");
-
-                if (!currentSlot.IsUnlocked)
-                    continue;
-                if (__instance.GetSlotSpaceLeft(i) <= 0)
-                    continue;
-                if (currentSlot.Id != null) // Same item type logic is handled at the top.
-                    continue;
-                if (!currentSlot.Definition.IsAllowed(metadata.Id))
+                if (!IsSlotViable(__instance, i, metadata))
                     continue;
 
                 viableSlot = i;
@@ -119,11 +138,6 @@ public class Mod : MelonMod
 
             index = viableSlot >= 0 ? viableSlot : 0;
             __result = viableSlot >= 0;
-
-            if (__result)
-                MelonLogger.Msg($"found slot: {index}");
-            else
-                MelonLogger.Msg($"no slot found");
 
             return false;
         }
