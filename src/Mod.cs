@@ -63,44 +63,6 @@ public class Mod : MelonMod
 
     private class MultiSlotItems
     {
-
-        /// <summary>Determines if a slot is viable for the given pending item.</summary>
-        /// <param name="manager">The AmmoSlotManager of the given inventory to run the check on.</param>
-        /// <param name="slotIdx">The slot to run the checks on.</param>
-        /// <param name="metadata">The metadata of the pending item.</param>
-        /// <returns>Returns true if viable, false if not.</returns>
-        private static bool IsSlotViable(AmmoSlotManager manager, int slotIdx, AmmoSlot.AmmoMetadata metadata)
-        {
-            AmmoSlot slot = manager.Slots[slotIdx];
-
-            if (!slot.IsUnlocked)
-                return false;
-            if (manager.GetSlotSpaceLeft(slotIdx) <= 0)
-                return false;
-            if (slot.Id != null && slot.Id != metadata.Id)
-                return false;
-            if (!slot.Definition.IsAllowed(metadata.Id))
-                return false;
-
-            return true;
-        }
-
-        /// <summary>Iterates and compares all slots' id within the given manager and compares to metadata.Id to find a matching non-full slot.</summary>
-        /// <param name="manager">The AmmoSlotManager of the given inventory to run the check on.</param>
-        /// <param name="metadata">The metadata of the pending item.</param>
-        /// <returns>Returns the slotIdx if a matching non-full slot was found. -1 if none of the conditions were met.</returns>
-        private static int FindMatchingSlot(AmmoSlotManager manager, AmmoSlot.AmmoMetadata metadata)
-        {
-
-            for (int i = 0; i < manager.Slots.Count; i++)
-            {
-                if (manager.Slots[i].Id == metadata.Id && manager.GetSlotSpaceLeft(i) > 0)
-                    return i;
-            }
-
-            return -1;
-        }
-
         [HarmonyPatch(typeof(AmmoSlotManager), nameof(AmmoSlotManager.TryFindSlot))]
         [HarmonyPrefix]
         private static bool TryFindSlotOverride(AmmoSlotManager __instance, AmmoSlot.AmmoMetadata metadata, out int index, ref bool __result)
@@ -111,7 +73,7 @@ public class Mod : MelonMod
                 return true;
             }
 
-            int viableSlot = FindMatchingSlot(__instance, metadata);
+            int viableSlot = Utils.FindMatchingSlot(__instance, metadata);
 
             if (viableSlot != -1)
             {
@@ -120,7 +82,7 @@ public class Mod : MelonMod
                 return false;
             }
 
-            if (MultiItemsEntry!.Value.SelectedSlotPriority && IsSlotViable(__instance, __instance._selectedAmmoIdx, metadata))
+            if (MultiItemsEntry!.Value.SelectedSlotPriority && Utils.IsSlotViable(__instance, __instance._selectedAmmoIdx, metadata))
             {
                 index = __instance._selectedAmmoIdx;
                 __result = true;
@@ -129,7 +91,7 @@ public class Mod : MelonMod
 
             for (int i = 0; i < __instance.Slots.Count; i++)
             {
-                if (!IsSlotViable(__instance, i, metadata))
+                if (!Utils.IsSlotViable(__instance, i, metadata))
                     continue;
 
                 viableSlot = i;
