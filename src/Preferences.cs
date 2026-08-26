@@ -51,6 +51,15 @@ public class Preferences
 
         #endregion
 
+        #region Multi Slot Items
+
+        Mod.MultiItemsEntry = Mod.PlayerPreferences.CreateEntry(
+            "Multi_Slot_Items", new Mod.MultiSlotItemsEntry(false, false),
+            "Multi Slot Items"
+        );
+
+        #endregion
+
         #endregion
 
         #region Collectors

@@ -61,7 +61,7 @@ public class Mod : MelonMod
 
     #region Patches
 
-    private class MultiItemPatch
+    private class MultiSlotItems
     {
 
         /// <summary>Determines if a slot is viable for the given pending item.</summary>
@@ -120,7 +120,7 @@ public class Mod : MelonMod
                 return false;
             }
 
-            if (IsSlotViable(__instance, __instance._selectedAmmoIdx, metadata))
+            if (MultiItemsEntry!.Value.SelectedSlotPriority && IsSlotViable(__instance, __instance._selectedAmmoIdx, metadata))
             {
                 index = __instance._selectedAmmoIdx;
                 __result = true;
@@ -346,6 +346,12 @@ public class Mod : MelonMod
 
     #region Preference Variables
 
+    public class MultiSlotItemsEntry(bool enabled, bool selectedSlotPriority)
+    {
+        public bool Enabled = enabled;
+        public bool SelectedSlotPriority = selectedSlotPriority;
+    }
+
     public class InstaVacpackEntry(bool enabled, List<string> hotkeys)
     {
         public bool Enabled = enabled;
@@ -375,6 +381,8 @@ public class Mod : MelonMod
 
     public static MelonPreferences_Entry<LimitEntry>? PlayerPreferenceEntry;
 
+    public static MelonPreferences_Entry<MultiSlotItemsEntry>? MultiItemsEntry;
+
     public static MelonPreferences_Category? CollectorsPreferences;
     public static MelonPreferences_Entry<LimitEntry>? PlortCollector;
     public static MelonPreferences_Entry<LimitEntry>? ElderCollector;
@@ -394,7 +402,8 @@ public class Mod : MelonMod
         Preferences.Init();
         var h = new HarmonyLib.Harmony("com.bread-chan.vacuum_modifications");
 
-        h.PatchAll(typeof(MultiItemPatch));
+        if (MultiItemsEntry!.Value.Enabled)
+            h.PatchAll(typeof(MultiSlotItems));
 
         if (VacShootCooldown!.Value.Enabled)
             h.PatchAll(typeof(VacuumCooldown));
