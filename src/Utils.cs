@@ -178,7 +178,6 @@ public class Utils
     {
         var playerAmmo = Mod.Player!.Ammo;
         var ammoMetadata = new AmmoSlot.AmmoMetadata(id);
-        //var matchingSlot = playerAmmo.Slots.FirstOrDefault(slot => slot.Id == id);
 
         bool foundSlot = playerAmmo.TryFindSlot(ammoMetadata, out var ammoSlotIndex);
 

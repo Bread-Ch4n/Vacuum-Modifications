@@ -63,11 +63,29 @@ public class Mod : MelonMod
 
     private class MultiItemPatch
     {
+        private static int FindMatchingSlot(AmmoSlotManager playerAmmo, AmmoSlot.AmmoMetadata metadata)
+        {
+            for (int i = 0; i < playerAmmo.Slots.Count; i++)
+            {
+                if (playerAmmo.Slots[i].Id == metadata.Id && playerAmmo.GetSlotSpaceLeft(i) > 0)
+                    return i;
+            }
+
+            return -1;
+        }
+
         [HarmonyPatch(typeof(AmmoSlotManager), nameof(AmmoSlotManager.TryFindSlot))]
         [HarmonyPrefix]
         private static bool TryFindSlotOverride(AmmoSlotManager __instance, AmmoSlot.AmmoMetadata metadata, out int index, ref bool __result)
         {
-            int viableSlot = -1;
+            int viableSlot = FindMatchingSlot(__instance, metadata);
+
+            if (viableSlot != -1)
+            {
+                index = viableSlot;
+                __result = true;
+                return false;
+            }
 
             MelonLogger.Msg($"total slots: {__instance.Slots.Count}");
 
