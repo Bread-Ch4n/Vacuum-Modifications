@@ -5,6 +5,7 @@ using Il2CppMonomiPark.SlimeRancher.Player.PlayerItems;
 using Il2CppMonomiPark.SlimeRancher.UI;
 using Il2CppMonomiPark.SlimeRancher.World;
 using MelonLoader;
+using System.Drawing;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using VacuumModifications;
@@ -242,10 +243,13 @@ public class Mod : MelonMod
         }
 
         #endregion
+    }
 
-        #region Variables
+    #endregion
 
-        public static PlayerState? Player;
+    #region Variables
+
+    public static PlayerState? Player;
 
     #region MoreVaccables Compatibility Variables
 
@@ -357,4 +361,3 @@ public class Mod : MelonMod
     }
 
     #endregion
-}
