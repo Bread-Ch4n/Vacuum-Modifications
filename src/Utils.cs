@@ -178,11 +178,46 @@ public class Utils
     {
         var playerAmmo = Mod.Player!.Ammo;
         var ammoMetadata = new AmmoSlot.AmmoMetadata(id);
-        var matchingSlot = playerAmmo.Slots.FirstOrDefault(slot => slot.Id == id);
 
-        playerAmmo.TryFindSlot(ammoMetadata, out var ammoSlotIndex);
-        return matchingSlot ?? (playerAmmo.CouldAddToSelectedSlot(ammoMetadata)
-            ? playerAmmo.Slots[playerAmmo._selectedAmmoIdx]
-            : playerAmmo.Slots[ammoSlotIndex] ?? null);
+        bool foundSlot = playerAmmo.TryFindSlot(ammoMetadata, out var ammoSlotIndex);
+
+        return foundSlot ? playerAmmo.Slots[ammoSlotIndex] : null;
+    }
+
+    /// <summary>Iterates and compares all slots' id within the given manager to metadata.Id, and finds a matching non-full slot.</summary>
+    /// <param name="manager">The AmmoSlotManager of the given inventory to run the check on.</param>
+    /// <param name="metadata">The metadata of the pending item.</param>
+    /// <returns>Returns <see langword="int"/> slotIdx if a matching non-full slot was found. -1 if none of the conditions were met.</returns>
+    public static int FindMatchingSlot(AmmoSlotManager manager, AmmoSlot.AmmoMetadata metadata)
+    {
+
+        for (int i = 0; i < manager.Slots.Count; i++)
+        {
+            if (manager.Slots[i].Id == metadata.Id && manager.GetSlotSpaceLeft(i) > 0)
+                return i;
+        }
+
+        return -1;
+    }
+
+    /// <summary>Determines if a slot is viable for the given pending item.</summary>
+    /// <param name="manager">The AmmoSlotManager of the given inventory to run the check on.</param>
+    /// <param name="slotIdx">The slot to run the checks on.</param>
+    /// <param name="metadata">The metadata of the pending item.</param>
+    /// <returns>Returns <see langword="true"/> if viable, <see langword="false"/> if not.</returns>
+    public static bool IsSlotViable(AmmoSlotManager manager, int slotIdx, AmmoSlot.AmmoMetadata metadata)
+    {
+        AmmoSlot slot = manager.Slots[slotIdx];
+
+        if (!slot.IsUnlocked)
+            return false;
+        if (manager.GetSlotSpaceLeft(slotIdx) <= 0)
+            return false;
+        if (slot.Id != null && slot.Id != metadata.Id)
+            return false;
+        if (!slot.Definition.IsAllowed(metadata.Id))
+            return false;
+
+        return true;
     }
 }

@@ -61,6 +61,50 @@ public class Mod : MelonMod
 
     #region Patches
 
+    private class MultiSlotItems
+    {
+        [HarmonyPatch(typeof(AmmoSlotManager), nameof(AmmoSlotManager.TryFindSlot))]
+        [HarmonyPrefix]
+        private static bool TryFindSlotOverride(AmmoSlotManager __instance, AmmoSlot.AmmoMetadata metadata, out int index, ref bool __result)
+        {
+            if (__instance != Player!.Ammo)
+            {
+                index = 0;
+                return true;
+            }
+
+            int viableSlot = Utils.FindMatchingSlot(__instance, metadata);
+
+            if (viableSlot != -1)
+            {
+                index = viableSlot;
+                __result = true;
+                return false;
+            }
+
+            if (MultiItemsEntry!.Value.SelectedSlotPriority && Utils.IsSlotViable(__instance, __instance._selectedAmmoIdx, metadata))
+            {
+                index = __instance._selectedAmmoIdx;
+                __result = true;
+                return false;
+            }
+
+            for (int i = 0; i < __instance.Slots.Count; i++)
+            {
+                if (!Utils.IsSlotViable(__instance, i, metadata))
+                    continue;
+
+                viableSlot = i;
+                break;
+            }
+
+            index = viableSlot >= 0 ? viableSlot : 0;
+            __result = viableSlot >= 0;
+
+            return false;
+        }
+    }
+
     private class VacuumCooldown
     {
         [HarmonyPatch(typeof(VacuumItem), nameof(VacuumItem.Start))]
@@ -264,6 +308,12 @@ public class Mod : MelonMod
 
     #region Preference Variables
 
+    public class MultiSlotItemsEntry(bool enabled, bool selectedSlotPriority)
+    {
+        public bool Enabled = enabled;
+        public bool SelectedSlotPriority = selectedSlotPriority;
+    }
+
     public class InstaVacpackEntry(bool enabled, List<string> hotkeys)
     {
         public bool Enabled = enabled;
@@ -293,6 +343,8 @@ public class Mod : MelonMod
 
     public static MelonPreferences_Entry<LimitEntry>? PlayerPreferenceEntry;
 
+    public static MelonPreferences_Entry<MultiSlotItemsEntry>? MultiItemsEntry;
+
     public static MelonPreferences_Category? CollectorsPreferences;
     public static MelonPreferences_Entry<LimitEntry>? PlortCollector;
     public static MelonPreferences_Entry<LimitEntry>? ElderCollector;
@@ -311,6 +363,9 @@ public class Mod : MelonMod
     {
         Preferences.Init();
         var h = new HarmonyLib.Harmony("com.bread-chan.vacuum_modifications");
+
+        if (MultiItemsEntry!.Value.Enabled)
+            h.PatchAll(typeof(MultiSlotItems));
 
         if (VacShootCooldown!.Value.Enabled)
             h.PatchAll(typeof(VacuumCooldown));
