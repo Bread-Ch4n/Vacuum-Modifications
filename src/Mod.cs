@@ -13,7 +13,7 @@ using VacuumModifications;
 [assembly: MelonInfo(
     typeof(Mod),
     "Vacuum Modifications",
-    "2.3.7",
+    "2.4.0",
     "Bread-Chan",
     "https://www.nexusmods.com/slimerancher2/mods/45"
 )]
@@ -65,7 +65,8 @@ public class Mod : MelonMod
     {
         [HarmonyPatch(typeof(AmmoSlotManager), nameof(AmmoSlotManager.TryFindSlot))]
         [HarmonyPrefix]
-        private static bool TryFindSlotOverride(AmmoSlotManager __instance, AmmoSlot.AmmoMetadata metadata, out int index, ref bool __result)
+        private static bool TryFindSlotOverride(AmmoSlotManager __instance, AmmoSlot.AmmoMetadata metadata,
+            out int index, ref bool __result)
         {
             if (__instance != Player!.Ammo)
             {
@@ -73,7 +74,15 @@ public class Mod : MelonMod
                 return true;
             }
 
-            int viableSlot = Utils.FindMatchingSlot(__instance, metadata);
+            if (MultiItemsEntry!.Value.SelectedSlotPriority &&
+                Utils.IsSlotViable(__instance, __instance._selectedAmmoIdx, metadata))
+            {
+                index = __instance._selectedAmmoIdx;
+                __result = true;
+                return false;
+            }
+
+            var viableSlot = Utils.FindMatchingSlot(__instance, metadata);
 
             if (viableSlot != -1)
             {
@@ -82,14 +91,7 @@ public class Mod : MelonMod
                 return false;
             }
 
-            if (MultiItemsEntry!.Value.SelectedSlotPriority && Utils.IsSlotViable(__instance, __instance._selectedAmmoIdx, metadata))
-            {
-                index = __instance._selectedAmmoIdx;
-                __result = true;
-                return false;
-            }
-
-            for (int i = 0; i < __instance.Slots.Count; i++)
+            for (var i = 0; i < __instance.Slots.Count; i++)
             {
                 if (!Utils.IsSlotViable(__instance, i, metadata))
                     continue;
