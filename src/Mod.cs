@@ -1,5 +1,6 @@
 ﻿using HarmonyLib;
 using Il2Cpp;
+using Il2CppMonomiPark.SlimeRancher.Input;
 using Il2CppMonomiPark.SlimeRancher.Player;
 using Il2CppMonomiPark.SlimeRancher.Player.PlayerItems;
 using Il2CppMonomiPark.SlimeRancher.UI;
@@ -196,9 +197,9 @@ public class Mod : MelonMod
             return true;
         }
 
-        [HarmonyPatch(typeof(VacuumItem), nameof(VacuumItem.Consume))]
+        [HarmonyPatch(typeof(VacuumItem), nameof(VacuumItem.VacTriggered))]
         [HarmonyPrefix]
-        private static bool InstaGrab(VacuumItem __instance, HashSet<GameObject> inVac)
+        private static bool InstaGrab(VacuumItem __instance, InputEventData data)
         {
             if (_raycastStatus != RaycastStatus.LookingAtContainer)
                 return true;

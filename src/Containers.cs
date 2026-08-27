@@ -153,8 +153,27 @@ public static class Containers
         }
     }
 
-    public class PlortCollector(SiloCatcher siloCatcher, SiloStorage? siloStorage = null)
-        : OutputOnlyContainer(siloCatcher, siloStorage);
+    public class PlortCollector(SiloCatcher siloCatcher, SiloStorage? siloStorage = null) : IItemContainer
+    {
+        private readonly SiloStorage _silo = siloStorage ?? siloCatcher._storageSilo;
+
+        public AmmoSlot AmmoSlot => _silo.Ammo.Slots[siloCatcher.SlotIdx]!;
+
+        public int Count => AmmoSlot.Count;
+        public int MaxCount => AmmoSlot.MaxCount;
+        public bool CanRemove => Count > 0;
+        public bool CanAdd => false;
+
+        public bool Add(int count) => false;
+
+        public bool Remove(int count)
+        {
+            if (!CanRemove)
+                return false;
+            AmmoSlot.Count = Math.Max(0, AmmoSlot.Count - count);
+            return true;
+        }
+    }
 
     public class SprinkleCanister(SiloCatcher siloCatcher, SiloStorage? siloStorage = null)
         : OutputOnlyContainer(siloCatcher, siloStorage);
