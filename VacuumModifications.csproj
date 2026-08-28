@@ -46,4 +46,8 @@
             <Private>false</Private>
         </Reference>
     </ItemGroup>
+
+    <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+        <AssemblyName>$(MSBuildProjectName)_Debug</AssemblyName>
+    </PropertyGroup>
 </Project>
